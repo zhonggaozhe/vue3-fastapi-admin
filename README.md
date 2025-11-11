@@ -17,44 +17,6 @@
 - **JWT鉴权**：使用 JSON Web Token（JWT）进行身份验证和授权，增强应用的安全性。
 - **细粒度权限控制**：实现按钮和接口级别的权限控制，确保不同用户或角色在界面操作和接口访问时具有不同的权限限制。
 
-### 快速开始
-#### 方法一：dockerhub拉取镜像
-
-```sh
-docker pull mizhexiaoxiao/vue-fastapi-admin:latest 
-docker run -d --restart=always --name=vue-fastapi-admin -p 9999:80 mizhexiaoxiao/vue-fastapi-admin
-```
-
-#### 方法二：dockerfile构建镜像
-##### docker安装(版本17.05+)
-
-```sh
-yum install -y docker-ce
-systemctl start docker
-```
-
-##### 构建镜像
-
-```sh
-git clone https://github.com/mizhexiaoxiao/vue-fastapi-admin.git
-cd vue-fastapi-admin
-docker build --no-cache . -t vue-fastapi-admin
-```
-
-##### 启动容器
-
-```sh
-docker run -d --restart=always --name=vue-fastapi-admin -p 9999:80 vue-fastapi-admin
-```
-
-##### 访问
-
-http://localhost:9999
-
-username：admin
-
-password：123456
-
 ### 本地启动
 #### 后端
 启动项目需要以下环境：

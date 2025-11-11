@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { store } from '../index'
-import { UserLoginType, UserType } from '@/api/login/types'
+import { UserLoginType, UserInfo } from '@/api/login/types'
 import { ElMessageBox } from 'element-plus'
 import { useI18n } from '@/hooks/web/useI18n'
 import { loginOutApi } from '@/api/login'
@@ -8,7 +8,7 @@ import { useTagsViewStore } from './tagsView'
 import router from '@/router'
 
 interface UserState {
-  userInfo?: UserType
+  userInfo?: UserInfo
   tokenKey: string
   token: string
   roleRouters?: string[] | AppCustomRouteRecordRaw[]
@@ -20,7 +20,7 @@ export const useUserStore = defineStore('user', {
   state: (): UserState => {
     return {
       userInfo: undefined,
-      tokenKey: 'Authorization',
+      tokenKey: 'token',
       token: '',
       roleRouters: undefined,
       // 记住我
@@ -35,7 +35,7 @@ export const useUserStore = defineStore('user', {
     getToken(): string {
       return this.token
     },
-    getUserInfo(): UserType | undefined {
+    getUserInfo(): UserInfo | undefined {
       return this.userInfo
     },
     getRoleRouters(): string[] | AppCustomRouteRecordRaw[] | undefined {
@@ -55,7 +55,7 @@ export const useUserStore = defineStore('user', {
     setToken(token: string) {
       this.token = token
     },
-    setUserInfo(userInfo?: UserType) {
+    setUserInfo(userInfo?: UserInfo) {
       this.userInfo = userInfo
     },
     setRoleRouters(roleRouters: string[] | AppCustomRouteRecordRaw[]) {

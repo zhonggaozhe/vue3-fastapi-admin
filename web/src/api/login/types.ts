@@ -3,9 +3,23 @@ export interface UserLoginType {
   password: string
 }
 
-export interface UserType {
+export type LoginParams = UserLoginType
+
+export interface LoginResult {
+  access_token: string
   username: string
-  password: string
-  role: string
-  roleId: string
+}
+
+export interface UserInfo {
+  id: number
+  username: string
+  alias?: string
+  email?: string
+  phone?: string
+  avatar?: string
+  is_active?: boolean
+  is_superuser?: boolean
+  last_login?: string
+  role?: string
+  roleId?: string | number
 }
