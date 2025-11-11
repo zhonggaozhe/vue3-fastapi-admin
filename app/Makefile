@@ -59,7 +59,7 @@ check-format: ## Dry-run code formatter
 
 .PHONY: lint
 lint: ## Run ruff
-	ruff check ./app 
+	ruff check .
  
 .PHONY: format
 format: ## Run code formatter

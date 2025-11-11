@@ -4,12 +4,12 @@ import { Form, FormSchema } from '@/components/Form'
 import { useI18n } from '@/hooks/web/useI18n'
 import { ElCheckbox, ElLink } from 'element-plus'
 import { useForm } from '@/hooks/web/useForm'
-import { loginApi, getTestRoleApi, getAdminRoleApi, getUserInfoApi } from '@/api/login'
+import { loginApi, getTestRoleApi, getAdminRoleApi } from '@/api/login'
 import { useAppStore } from '@/store/modules/app'
 import { usePermissionStore } from '@/store/modules/permission'
 import { useRouter } from 'vue-router'
 import type { RouteLocationNormalizedLoaded, RouteRecordRaw } from 'vue-router'
-import { LoginParams } from '@/api/login/types'
+import { UserType } from '@/api/login/types'
 import { useValidator } from '@/hooks/web/useValidator'
 import { Icon } from '@/components/Icon'
 import { useUserStore } from '@/store/modules/user'
@@ -233,12 +233,12 @@ const signIn = async () => {
   await formRef?.validate(async (isValid) => {
     if (isValid) {
       loading.value = true
-      const formData = await getFormData<LoginParams>()
+      const formData = await getFormData<UserType>()
 
       try {
         const res = await loginApi(formData)
 
-        if (res?.data?.access_token) {
+        if (res) {
           // 是否记住我
           if (unref(remember)) {
             userStore.setLoginInfo({
@@ -249,13 +249,7 @@ const signIn = async () => {
             userStore.setLoginInfo(undefined)
           }
           userStore.setRememberMe(unref(remember))
-          userStore.setTokenKey('token')
-          userStore.setToken(res.data.access_token)
-          const userInfoRes = await getUserInfoApi().catch(() => undefined)
-          if (!userInfoRes?.data) {
-            return
-          }
-          userStore.setUserInfo(userInfoRes.data)
+          userStore.setUserInfo(res.data)
           // 是否使用动态路由
           if (appStore.getDynamicRouter) {
             getRole()
@@ -277,7 +271,7 @@ const signIn = async () => {
 
 // 获取角色信息
 const getRole = async () => {
-  const formData = await getFormData<LoginParams>()
+  const formData = await getFormData<UserType>()
   const params = {
     roleName: formData.username
   }

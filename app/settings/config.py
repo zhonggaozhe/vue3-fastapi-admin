@@ -1,5 +1,6 @@
 import os
 import typing
+import warnings
 
 from pydantic_settings import BaseSettings
 
@@ -14,81 +15,69 @@ class Settings(BaseSettings):
     CORS_ALLOW_CREDENTIALS: bool = True
     CORS_ALLOW_METHODS: typing.List = ["*"]
     CORS_ALLOW_HEADERS: typing.List = ["*"]
+    TORTOISE_ORM: dict = {}
 
     DEBUG: bool = True
 
     PROJECT_ROOT: str = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
     BASE_DIR: str = os.path.abspath(os.path.join(PROJECT_ROOT, os.pardir))
-    LOGS_ROOT: str = os.path.join(BASE_DIR, "app/logs")
-    SECRET_KEY: str = "3488a63e1765035d386f05409663f55c83bfae3b3c61a932744b20ad14244dcf"  # openssl rand -hex 32
+    LOGS_ROOT: str = os.path.join(PROJECT_ROOT, "log")
+    SECRET_KEY: str = "3488a63e1765035d386f05409663f55c83bfae3b3c61a932744b20ad14244dcf"
     JWT_ALGORITHM: str = "HS256"
-    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 day
-    TORTOISE_ORM: dict = {
-        "connections": {
-            # SQLite configuration
-            # "sqlite": {
-            #     "engine": "tortoise.backends.sqlite",
-            #     "credentials": {"file_path": f"{BASE_DIR}/db.sqlite3"},  # Path to SQLite database file
-            # },
-            # MySQL/MariaDB configuration
-            # Install with: tortoise-orm[asyncmy]
-            # "mysql": {
-            #     "engine": "tortoise.backends.mysql",
-            #     "credentials": {
-            #         "host": "localhost",  # Database host address
-            #         "port": 3306,  # Database port
-            #         "user": "yourusername",  # Database username
-            #         "password": "yourpassword",  # Database password
-            #         "database": "yourdatabase",  # Database name
-            #     },
-            # },
-            # PostgreSQL configuration
-            # Install with: tortoise-orm[asyncpg]
-            "postgres": {
-                "engine": "tortoise.backends.asyncpg",
-                "credentials": {
-                    "host": "localhost",  # Database host address
-                    "port": 5433,  # Database port
-                    "user": "postgres",  # Database username
-                    "password": "pcpNeCHcT83AGs6xhWv6",  # Database password
-                    "database": "fastapi_admin_db",  # Database name
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 天
+
+    DB_CONNECTION: str = os.getenv("DB_CONNECTION", "postgres")
+    SQLITE_DB_PATH: str = os.path.join(BASE_DIR, "db.sqlite3")
+    POSTGRES_HOST: str = os.getenv("POSTGRES_HOST", "localhost")
+    POSTGRES_PORT: int = int(os.getenv("POSTGRES_PORT", "5433"))
+    POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgres")
+    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "pcpNeCHcT83AGs6xhWv6")
+    POSTGRES_DB: str = os.getenv("POSTGRES_DB", "fastapi_admin_db")
+
+    DATETIME_FORMAT: str = "%Y-%m-%d %H:%M:%S"
+
+    def build_tortoise_config(self) -> dict:
+        connections: dict[str, dict] = {
+            "sqlite": {
+                "engine": "tortoise.backends.sqlite",
+                "credentials": {"file_path": self.SQLITE_DB_PATH},
+            }
+        }
+
+        if self.DB_CONNECTION == "postgres":
+            try:
+                import asyncpg  # noqa: F401
+            except ImportError:
+                warnings.warn(
+                    "未检测到 asyncpg，已自动回落至 sqlite。若需连接 Postgres，请先安装 tortoise-orm[asyncpg]。",
+                    RuntimeWarning,
+                )
+                self.DB_CONNECTION = "sqlite"
+            else:
+                connections["postgres"] = {
+                    "engine": "tortoise.backends.asyncpg",
+                    "credentials": {
+                        "host": self.POSTGRES_HOST,
+                        "port": self.POSTGRES_PORT,
+                        "user": self.POSTGRES_USER,
+                        "password": self.POSTGRES_PASSWORD,
+                        "database": self.POSTGRES_DB,
+                    },
+                }
+
+        default_conn = self.DB_CONNECTION if self.DB_CONNECTION in connections else "sqlite"
+        return {
+            "connections": connections,
+            "apps": {
+                "models": {
+                    "models": ["app.models", "aerich.models"],
+                    "default_connection": self.DB_CONNECTION,
                 },
             },
-            # MSSQL/Oracle configuration
-            # Install with: tortoise-orm[asyncodbc]
-            # "oracle": {
-            #     "engine": "tortoise.backends.asyncodbc",
-            #     "credentials": {
-            #         "host": "localhost",  # Database host address
-            #         "port": 1433,  # Database port
-            #         "user": "yourusername",  # Database username
-            #         "password": "yourpassword",  # Database password
-            #         "database": "yourdatabase",  # Database name
-            #     },
-            # },
-            # SQLServer configuration
-            # Install with: tortoise-orm[asyncodbc]
-            # "sqlserver": {
-            #     "engine": "tortoise.backends.asyncodbc",
-            #     "credentials": {
-            #         "host": "localhost",  # Database host address
-            #         "port": 1433,  # Database port
-            #         "user": "yourusername",  # Database username
-            #         "password": "yourpassword",  # Database password
-            #         "database": "yourdatabase",  # Database name
-            #     },
-            # },
-        },
-        "apps": {
-            "models": {
-                "models": ["app.models", "aerich.models"],
-                "default_connection": "sqlite",
-            },
-        },
-        "use_tz": False,  # Whether to use timezone-aware datetimes
-        "timezone": "Asia/Shanghai",  # Timezone setting
-    }
-    DATETIME_FORMAT: str = "%Y-%m-%d %H:%M:%S"
+            "use_tz": False,
+            "timezone": "Asia/Shanghai",
+        }
 
 
 settings = Settings()
+settings.TORTOISE_ORM = settings.build_tortoise_config()

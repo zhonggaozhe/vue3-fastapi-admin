@@ -8,7 +8,7 @@ authors = [
 requires-python = ">=3.11"
 dependencies = [
     "fastapi==0.111.0",
-    "tortoise-orm==0.23.0",
+    "tortoise-orm[asyncpg]==0.23.0",
     "pydantic==2.10.5",
     "email-validator==2.2.0",
     "passlib==1.7.4",

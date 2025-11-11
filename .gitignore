@@ -1,0 +1,45 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+db.sqlite3*
+*.log
+.env
+.env.*
+.venv/
+venv/
+env/
+
+# FastAPI/Tortoise generated artifacts
+migrations/__pycache__/
+aerich.ini
+
+# Node / Frontend
+node_modules/
+web/node_modules/
+web/.pnpm-store/
+web/dist/
+web/.vite/
+web/.nuxt/
+*.tsbuildinfo
+
+# Editor & tooling
+.idea/
+.vscode/
+*.swp
+*.swo
+*.iml
+
+# Logs / runtime
+nohup.out
+/app/log/*.log
