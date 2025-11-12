@@ -1,0 +1,35 @@
+from __future__ import annotations
+
+from functools import lru_cache
+from typing import Literal, Optional
+
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"
+    )
+
+    app_name: str = "FastAPI Admin Service"
+    environment: Literal["local", "dev", "prod"] = "local"
+    database_url: str = Field(
+        default="postgresql+asyncpg://postgres:postgres@localhost:5432/admin",
+        description="SQLAlchemy async database URL",
+    )
+    redis_url: str = Field(default="redis://localhost:6379/0", description="Redis connection URL")
+    docs_url: Optional[str] = "/docs"
+    redoc_url: Optional[str] = "/redoc"
+    access_token_ttl_minutes: int = 15
+    refresh_token_ttl_minutes: int = 24 * 60
+    jwt_public_key_path: str = "certs/jwt_public.pem"
+    jwt_private_key_path: str = "certs/jwt_private.pem"
+    jwt_algorithm: str = "HS256"
+    jwt_secret_key: str = Field(default="change-me", description="HS* symmetric secret")
+    rate_limit_default: int = 100
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

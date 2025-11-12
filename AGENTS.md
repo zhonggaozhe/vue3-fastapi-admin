@@ -7,6 +7,21 @@ Python 3.11 + FastAPI 高性能异步权限认证系统（Agent-Oriented Archite
 本系统采用 Agent-Oriented Architecture，围绕 Python 3.11 + FastAPI 构建高性能认证、授权、会话管理与审计体系。
 整体由多个自治 Agent 组成，通过 Orchestrator 统一编排。
 
+背景：
+	•	web 目录下是前端项目，app 目录下是后端项目
+	•	web 基于 `element-plus` 免费开源的中后台模版。使用了最新的`vue3`，`vite`，`TypeScript`等主流技术开发
+	•	web 项目已经实现权限功能，包括：
+		•	用户管理
+		•	角色管理
+		•	菜单管理
+		•	权限管理
+		•	用户登录
+		•	登录推出
+		•	动态菜单
+		•	权限控制
+	•	web 现采用mock数据，后端接口未实现, 你现在要做的工作就是根据mock数据反向推理后端接口
+⸻
+
 设计目标：
 	•	高性能
 	•	高可观察性
@@ -375,9 +390,6 @@ project/
 ├── tests/
 ├── pyproject.toml
 └── AGENTS.md
-
-
-⸻
 
 11. 实现建议（Implementation Notes）
 	•	使用 uvicorn + uvloop + httptools 获得最大性能
