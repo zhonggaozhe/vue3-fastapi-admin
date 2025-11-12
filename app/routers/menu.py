@@ -8,13 +8,28 @@ from app.repositories.user_repository import UserRepository
 from app.schemas.menu import MenuCreate, MenuUpdate
 
 router = APIRouter()
+legacy_router = APIRouter(prefix="/menu")
+
+
+async def _menu_list_payload(db: AsyncSession) -> dict:
+    menu_repo = MenuRepository(db)
+    tree = await menu_repo.fetch_admin_tree()
+    return success_response({"list": tree})
 
 
 @router.get("/")
 async def list_menus(db: AsyncSession = Depends(get_db)) -> dict:
-    menu_repo = MenuRepository(db)
-    tree = await menu_repo.fetch_admin_tree()
-    return success_response({"list": tree})
+    return await _menu_list_payload(db)
+
+
+@router.get("/list")
+async def list_menus_alias(db: AsyncSession = Depends(get_db)) -> dict:
+    return await _menu_list_payload(db)
+
+
+@legacy_router.get("/list")
+async def legacy_menu_list(db: AsyncSession = Depends(get_db)) -> dict:
+    return await _menu_list_payload(db)
 
 
 @router.get("/routes")
@@ -61,13 +76,17 @@ async def update_menu(menu_id: int, payload: MenuUpdate, db: AsyncSession = Depe
 
 
 @router.delete("/{menu_id}")
-async def delete_menu(menu_id: int, db: AsyncSession = Depends(get_db)) -> dict:
+async def delete_menu(
+    menu_id: int,
+    force: bool = Query(False, description="是否级联删除子菜单"),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
     menu_repo = MenuRepository(db)
     menu = await menu_repo.get_menu(menu_id)
     if not menu:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Menu not found")
     try:
-        await menu_repo.delete_menu(menu)
+        await menu_repo.delete_menu(menu, force=force)
     except ValueError as exc:
         if str(exc) == "MENU_HAS_CHILDREN":
             raise HTTPException(

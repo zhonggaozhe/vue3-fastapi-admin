@@ -50,7 +50,8 @@ export default {
     notSpecialCharacters: 'Special characters are not allowed',
     isEqual: 'The two are not equal',
     // 列设置
-    setting: 'Setting'
+    setting: 'Setting',
+    deleteConfirm: 'Do you want to delete the selected data?'
   },
   lock: {
     lockScreen: 'Lock screen',
@@ -565,7 +566,12 @@ export default {
     noTagsView: 'No tags view',
     activeMenu: 'Active menu',
     canTo: 'Can to',
-    name: 'Name'
+    name: 'Name',
+    deleteChildrenTitle: 'Delete children',
+    deleteChildrenConfirm: 'Delete all child menus and actions together?',
+    deleteChildrenOk: 'Yes, delete children',
+    deleteChildrenCancel: 'No, only current menu',
+    deleteNeedCascade: 'This menu still has children. Choose "Delete children" or remove them first.'
   },
   role: {
     roleName: 'Role name',

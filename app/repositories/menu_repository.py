@@ -3,8 +3,8 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any
 
-from sqlalchemy import Select, select
-from sqlalchemy.orm import selectinload
+from sqlalchemy import Select, delete, select, union_all
+from sqlalchemy.orm import aliased, selectinload
 
 from app.models.menu import Menu, MenuAction, MenuType
 from app.models.role import RoleMenu
@@ -59,13 +59,31 @@ class MenuRepository:
         await self.session.refresh(menu)
         return menu
 
-    async def delete_menu(self, menu: Menu) -> None:
+    async def delete_menu(self, menu: Menu, force: bool = False) -> None:
+        if force:
+            await self._delete_subtree(menu.id)
+            return
+
         child_exists = await self.session.scalar(
             select(Menu.id).where(Menu.parent_id == menu.id).limit(1)
         )
         if child_exists:
             raise ValueError("MENU_HAS_CHILDREN")
         await self.session.delete(menu)
+        await self.session.commit()
+
+    async def _delete_subtree(self, root_id: int) -> None:
+        menu_cte = select(Menu.id).where(Menu.id == root_id).cte(name="menu_tree", recursive=True)
+        menu_alias = aliased(Menu)
+        menu_cte = menu_cte.union_all(
+            select(menu_alias.id).where(menu_alias.parent_id == menu_cte.c.id)
+        )
+        stmt = select(menu_cte.c.id)
+        result = await self.session.execute(stmt)
+        ids = [row[0] for row in result]
+        if not ids:
+            return
+        await self.session.execute(delete(Menu).where(Menu.id.in_(ids)))
         await self.session.commit()
 
     def _assign_fields(self, menu: Menu, payload) -> None:
@@ -137,6 +155,7 @@ class MenuRepository:
             "id": menu.id,
             "parentId": menu.parent_id,
             "parentName": parent_title,
+            "title": menu.title,
             "path": menu.path,
             "name": menu.name,
             "component": menu.component or "#",
@@ -194,6 +213,7 @@ class MenuRepository:
                     "id": menu.id,
                     "parentId": menu.parent_id,
                     "parentName": title_map.get(menu.parent_id),
+                    "title": menu.title,
                     "path": menu.path,
                     "name": menu.name,
                     "component": menu.component or "#",

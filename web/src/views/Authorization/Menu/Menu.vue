@@ -220,12 +220,44 @@ const action = (row: any, type: string) => {
 }
 
 const handleDelete = async (row: any) => {
-  await ElMessageBox.confirm(t('common.deleteConfirm'), t('common.reminder'), {
-    type: 'warning'
-  })
-  await deleteMenuApi(row.id)
-  ElMessage.success('删除成功')
-  await getList()
+  try {
+    await ElMessageBox.confirm(t('common.deleteConfirm'), t('common.reminder'), {
+      type: 'warning'
+    })
+  } catch {
+    return
+  }
+
+  let forceDelete = false
+  try {
+    await ElMessageBox.confirm(
+      t('menu.deleteChildrenConfirm'),
+      t('menu.deleteChildrenTitle'),
+      {
+        type: 'warning',
+        confirmButtonText: t('menu.deleteChildrenOk'),
+        cancelButtonText: t('menu.deleteChildrenCancel'),
+        distinguishCancelAndClose: true
+      }
+    )
+    forceDelete = true
+  } catch (action) {
+    if (action !== 'cancel') {
+      return
+    }
+  }
+
+  try {
+    await deleteMenuApi(row.id, { force: forceDelete })
+    ElMessage.success(t('common.delSuccess'))
+    await getList()
+  } catch (error: any) {
+    console.log(error)
+    const detail = error?.response?.data?.detail
+    if (!forceDelete && detail === 'Please remove child menus first') {
+      ElMessage.warning(t('menu.deleteNeedCascade'))
+    }
+  }
 }
 
 const transformMenuPayload = (formData: any) => {
@@ -270,7 +302,7 @@ const save = async () => {
       } else {
         await createMenuApi(payload)
       }
-      ElMessage.success('操作成功')
+      ElMessage.success(t('common.saveSuccess'))
       dialogVisible.value = false
       await getList()
     } finally {

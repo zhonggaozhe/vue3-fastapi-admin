@@ -49,7 +49,8 @@ export default {
     notSpace: '不能包含空格',
     notSpecialCharacters: '不能包含特殊字符',
     isEqual: '两次输入不一致',
-    setting: '设置'
+    setting: '设置',
+    deleteConfirm: '是否删除所选中数据？'
   },
   lock: {
     lockScreen: '锁定屏幕',
@@ -555,7 +556,12 @@ export default {
     noTagsView: '是否隐藏标签页',
     activeMenu: '高亮菜单',
     canTo: '是否可跳转',
-    name: '组件名称'
+    name: '组件名称',
+    deleteChildrenTitle: '子菜单处理',
+    deleteChildrenConfirm: '是否同时删除该菜单下的所有子菜单与按钮权限？',
+    deleteChildrenOk: '是，删除子菜单',
+    deleteChildrenCancel: '否，仅删除当前菜单',
+    deleteNeedCascade: '该菜单仍有子节点，请勾选“删除子菜单”或先删除子级。'
   },
   role: {
     roleName: '角色名称',
