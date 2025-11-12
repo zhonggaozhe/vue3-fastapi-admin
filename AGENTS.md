@@ -1,34 +1,398 @@
-# Repository Guidelines
+Python 3.11 + FastAPI 高性能异步权限认证系统（Agent-Oriented Architecture）设计文档
 
-## 项目结构与模块组织
-后端代码集中在 `app/`，FastAPI 路由位于 `app/api/v1`，业务逻辑在 `controllers/` 与 `core/`，数据模型和校验分别位于 `models/` 和 `schemas/`。前端资源位于 `web/`，其中 `src/` 包含组件、路由和 Pinia store，`build/` 与 `settings/` 存放 Vite 配置。`deploy/` 提供 Docker 与示例素材，根目录的 `Makefile`、`pyproject.toml`、`run.py` 负责后端管理。新增脚本或资产请贴近现有模块，避免平行目录。
+⸻
 
-## 工作内容
-当前 `web` 端仍全部依赖 mock 数据，近期目标如下：
-1. 逐页梳理 `web/src` 中的业务模块，定位其 mock 依赖（包含 `mock` 目录、`api` 封装与 store），将调用替换为真正的后端接口。
-2. 以既有 mock 数据结构为契约检验接口输出，发现字段或结构不一致时，直接修改后端实现（模型、序列化、控制器）以匹配前端预期，确保分页、权限与状态字段保持对齐。
+1. 概述（Overview）
 
-## 构建、测试与开发命令
-使用 `uv venv && uv add pyproject.toml` 初始化 Python 环境，随后 `make start` 或 `python run.py` 启动 API。数据库迁移依赖 Aerich：执行 `make migrate` 再 `make upgrade`。前端开发在 `web/` 目录下进行，`pnpm i` 安装依赖，`pnpm dev` 启动开发服务器，`pnpm build:pro` 生成生产构建。静态检查统一：后端使用 `make check-format`，前端使用 `pnpm lint:eslint`、`pnpm lint:style`、`pnpm lint:format`。
+本系统采用 Agent-Oriented Architecture，围绕 Python 3.11 + FastAPI 构建高性能认证、授权、会话管理与审计体系。
+整体由多个自治 Agent 组成，通过 Orchestrator 统一编排。
 
-## 代码风格与命名规则
-Python 采用 Black+isort（120 列）与 Ruff，统一 4 空格缩进，模块、异步接口、模型字段使用 snake_case。Vue/TypeScript 遵循 ESLint+Prettier 规则，组件使用 PascalCase，文件命名采用 kebab-case（如 `user-profile.vue`）。共享枚举或配置助手放入 `app/settings/` 或 `web/src/settings/`，避免重复定义。
+设计目标：
+	•	高性能
+	•	高可观察性
+	•	可扩展
+	•	支持 JWT + Refresh Token
+	•	支持 RBAC 权限体系
+	•	支持 MFA、OAuth、黑名单、角色/策略缓存
+	•	支持分布式/多实例部署
+	•	使用 PostgreSQL + Redis
 
-## 测试规范
-后端通过 `make test` 运行，命令会先加载 `.env` 再执行 `pytest -vv`。测试文件放在 `app/tests/`，路径需镜像业务模块（例：`app/tests/api/v1/test_roles.py`），使用 FastAPI `TestClient` 验证接口输入输出。前端至少要在 CI 中运行 `pnpm ts:check` 与各类 lint；若新增业务逻辑，请在 `web/src/__tests__/` 编写 Vitest 单测（若未建目录需先创建）或在 PR 中描述手动验证步骤。涉及安全、鉴权、持久化的模块应力求 80% 以上覆盖率。
+⸻
 
-## 提交与 Pull Request 要求
-现有历史以简短祈使句为主（如 `修改包名称`），仓库同时集成 `@commitlint/config-conventional`，建议遵循 Conventional Commits（示例：`feat(core): add role seeding`）。PR 需聚焦单一主题，关联相关 Issue，并在涉及 UI 或 API 时附上截图或 cURL。说明中必须列出迁移影响、新增环境变量以及手动验证流程，方便审核者复现。
+2. 总体架构（Architecture）
 
-## 安全与配置提示
-机密配置放入 `.env`，并在 `app/settings/config.py` 提供安全默认值；严禁在 `web/src` 明文写入凭证。新增接口时请通过 `app/core/security.py` 里的 RBAC 工具挂载权限，并同步更新 `web/src/router` 守卫以保持前后端状态一致。合并前务必执行 `docker build . -t vue-fastapi-admin` 验证镜像仍可构建，确保与已发布镜像保持一致。
+                         ┌────────────────────┐
+                         │   Client / App     │
+                         └─────────┬──────────┘
+                                   │
+                           HTTPS / API Gateway
+                                   │
+                         ┌─────────▼──────────┐
+                         │  FastAPI Service    │
+                         └─────────┬──────────┘
+                                   │
+                     ┌─────────────▼──────────────┐
+                     │     Codex Orchestrator     │
+                     └───────┬────────┬───────────┘
+                             │        │
+            ┌────────────────▼───┐ ┌──▼──────────────────┐
+            │    IdentityAgent   │ │     TokenAgent       │
+            └────────────────────┘ └──────────────────────┘
+            ┌────────────────────┐ ┌──────────────────────┐
+            │    RBACAgent       │ │    SessionAgent       │
+            └────────────────────┘ └──────────────────────┘
+            ┌────────────────────┐ ┌──────────────────────┐
+            │   AuditAgent       │ │  RateLimitAgent       │
+            └────────────────────┘ └──────────────────────┘
 
-## 代理协作提示
-自动化代理或脚本执行命令前需确认虚拟环境已激活，可通过 `source .venv/bin/activate && make start` 快速验证。批量任务建议分阶段运行，例如：`pnpm lint:eslint && pnpm lint:style && pnpm build:pro`，再以 `pytest tests -k smoke` 进行冒烟检查。提交成果时同步附上所用命令与关键日志片段，方便后续代理复用上下文。
 
-## 工作内容
+⸻
 
-web代码现在目前全部采用mock数据，我们的工作如下:
+3. Agent 职责说明
 
-1. 仔细分析web端代码，把mock数据替换成后端接口数据
-2. 后端接口数据需要以前端mock数据为参考，如果后端接口数据和前端mock数据不一致，需要修改后端接口代码
+3.1 Orchestrator（主控）
+
+编排所有登录/登出/刷新/鉴权流程。
+提供统一错误规约、事务一致性、重试、审计触发。
+
+⸻
+
+3.2 IdentityAgent（身份验证）
+
+功能：
+	•	用户名/邮箱登录
+	•	密码认证（argon2 / bcrypt）
+	•	可选 TOTP MFA
+	•	账号锁定策略（连续失败 N 次）
+	•	可选 OAuth2/OIDC/SAML 接入
+
+输出：
+
+{
+  "user_id": 101,
+  "username": "alice",
+  "mfa_required": false,
+  "attributes": {"dept": "RDM"}
+}
+
+
+⸻
+
+3.3 TokenAgent（JWT + Refresh）
+	•	生成 Access Token（短期，比如 15min）
+	•	生成 Refresh Token（长期，比如 7-30 天）
+	•	Refresh Token 轮换（rotate）
+	•	JTI 黑名单（access/refresh）
+	•	JWT kid 密钥轮换
+	•	保存 Token 状态到 Redis
+
+⸻
+
+3.4 RBACAgent（授权）
+	•	RBAC 模型：用户 → 角色 → 权限（resource:action）
+	•	角色策略缓存（Redis）
+	•	权限判定：is_allowed(user, resource, action)
+	•	支持 ABAC 动态条件（可选）
+
+⸻
+
+3.5 SessionAgent（会话）
+	•	生成 session_id(sid)
+	•	绑定 user_id / device / ua / ip
+	•	刷新会话（refresh rotate 时更新）
+	•	支持多端会话、限制并发会话数量（可选）
+	•	Redis 持久化（TTL = refresh token TTL）
+
+⸻
+
+3.6 AuditAgent（审计）
+
+记录所有：
+	•	登录成功/失败
+	•	刷新令牌
+	•	访问拒绝（403）
+	•	权限变更
+	•	配置变更
+	•	敏感行为（比如导出数据）
+
+可写入：
+	•	PostgreSQL
+
+⸻
+
+3.7 RateLimitAgent（限流）
+
+支持：
+	•	IP 限流
+	•	用户限流
+	•	登录限流（防爆破）
+	•	刷新 Token 限流
+
+Redis 滑动窗口或令牌桶。
+
+⸻
+
+4. API 定义（外部接口）
+
+4.1 登录（Login）
+
+POST /auth/login
+
+请求：
+
+{
+  "username": "alice",
+  "password": "123456",
+  "mfa_code": null,
+  "device_id": "ios-xxx"
+}
+
+响应：
+
+{
+  "access_token": "jwt...",
+  "refresh_token": "xxx",
+  "expires_in": 900,
+  "token_type": "Bearer",
+  "session": {
+    "sid": "sess_xxx",
+    "expires_at": "2025-01-01T12:34:56Z"
+  }
+  "user":  {
+    role: 'admin',
+    roleId: '1',
+    permissions: ['*.*.*']
+  }
+}
+
+
+⸻
+
+4.2 刷新令牌（Token Refresh）
+
+POST /auth/refresh
+
+请求：
+
+{
+  "refresh_token": "xxxx",
+  "device_id": "ios-xxx"
+}
+
+响应与 login 相同。
+
+⸻
+
+4.3 登出（Logout）
+
+POST /auth/logout
+Authorization: Bearer <access_token>
+
+行为：
+	•	access_token.jti → 黑名单
+	•	refresh_token.jti → 黑名单
+	•	会话 session 关闭
+
+⸻
+
+4.4 权限测试（Policy Test）
+
+POST /auth/perm-check
+
+请求：
+
+{
+  "resource": "user",
+  "action": "read"
+}
+
+
+⸻
+
+5. 数据模型
+
+5.1 PostgreSQL 结构（简化）
+
+用户表
+
+id BIGSERIAL PK
+username CITEXT UNIQUE
+email CITEXT UNIQUE
+password_hash TEXT
+is_active BOOLEAN
+mfa_secret TEXT
+created_at TIMESTAMPTZ
+updated_at TIMESTAMPTZ
+
+角色
+
+id BIGSERIAL PK
+code TEXT UNIQUE
+name TEXT
+created_at TIMESTAMPTZ
+
+用户-角色
+
+user_id BIGINT
+role_id BIGINT
+PRIMARY KEY (user_id, role_id)
+
+权限策略
+
+id BIGSERIAL PK
+effect 'allow' | 'deny'
+resource TEXT
+action TEXT
+condition JSONB
+
+角色-权限
+
+role_id BIGINT
+perm_id BIGINT
+PRIMARY KEY (role_id, perm_id)
+
+审计日志
+
+id BIGSERIAL PK
+event_type TEXT
+user_id BIGINT
+ip TEXT
+ua TEXT
+resource TEXT
+action TEXT
+status TEXT
+detail JSONB
+ts TIMESTAMPTZ
+
+
+⸻
+
+6. Redis Key 规范
+
+Key	示例	用途
+sess:{sid}	sess:abc123	保存会话信息
+jti:black:{jti}	jti:black:xxx	JWT 黑名单
+rt:{hash}	rt:lkj4j32	Refresh Token 状态
+rl:login:{ip}	rl:login:1.2.3.4	登录限流
+rbac:user:{id}	rbac:user:1001	用户权限缓存
+
+
+⸻
+
+7. 登录流程（Sequence）
+
+Client → /auth/login
+    → RateLimitAgent 检查
+    → IdentityAgent 校验账号密码
+        如果需要 MFA → 返回 “MFA_REQUIRED”
+    → TokenAgent 生成 access/refresh
+    → SessionAgent 创建 session
+    → AuditAgent 记录登录成功
+    → 返回 token + session
+
+刷新令牌流程：
+
+Client → /auth/refresh
+    → RateLimitAgent
+    → TokenAgent 验证 refresh_token
+    → TokenAgent 旋转 refresh_token
+    → SessionAgent 更新 session
+    → 审计
+    → 返回新 token
+
+权限判定流程：
+
+Gateway → JWT 解码 → 将 user_id 注入
+Handler → Depends(require_perm('user','list'))
+    → RBACAgent 加载缓存 or 数据库
+    → 判定 → allow/deny
+
+
+⸻
+
+8. 安全规范（Security Baseline）
+	•	密码使用 argon2id 或 bcrypt $12+
+	•	JWT 使用 RS256（推荐）并使用 kid 轮换
+	•	Refresh Token 必须 单次有效（rotate）
+	•	所有敏感行为审计
+	•	账号锁定策略（例如 5 分钟 5 次失败）
+	•	CSRF 仅在使用 Cookie 模式时启用
+	•	CORS 限制来源
+	•	所有 API 返回规范错误码：
+
+code	http	含义
+AUTH.INVALID_CREDENTIAL	401	密码错误
+AUTH.MFA_REQUIRED	401	需要 MFA
+AUTH.TOKEN_EXPIRED	401	access_token 过期
+AUTH.REFRESH_INVALID	401	refresh_token 失效
+AUTH.FORBIDDEN	403	权限不足
+AUTH.RATE_LIMIT	429	限流
+
+
+⸻
+
+9. 可观测性（Observability）
+	•	OpenTelemetry Trace：trace_id 注入所有日志
+	•	Prometheus Metrics：
+	•	auth_login_success_total
+	•	auth_login_fail_total
+	•	auth_refresh_total
+	•	rbac_cache_hit/miss_total
+	•	http_request_duration_ms
+	•	审计日志落 PostgreSQL（可用于合规）
+
+⸻
+
+10. 目录结构（建议）
+
+project/
+│
+├── app/
+│   ├── main.py
+│   ├── routers/
+│   │   ├── auth.py
+│   │   └── user.py
+│   ├── agents/
+│   │   ├── orchestrator.py
+│   │   ├── identity.py
+│   │   ├── token.py
+│   │   ├── rbac.py
+│   │   ├── session.py
+│   │   ├── audit.py
+│   │   └── ratelimit.py
+│   ├── core/
+│   │   ├── database.py
+│   │   ├── redis.py
+│   │   ├── settings.py
+│   │   ├── security.py
+│   │   └── errors.py
+│   └── models/
+│       ├── user.py
+│       ├── role.py
+│       ├── policy.py
+│       └── audit.py
+│
+├── tests/
+├── pyproject.toml
+└── AGENTS.md
+
+
+⸻
+
+11. 实现建议（Implementation Notes）
+	•	使用 uvicorn + uvloop + httptools 获得最大性能
+	•	SQLAlchemy async + asyncpg
+	•	Redis 连接池 ≥ 50
+	•	JWT 尽量不查数据库（依赖 claims + redis 黑名单）
+	•	RBAC 使用 Redis 版本号实现缓存自动失效
+	•	Token 旋转时必须立即写黑名单旧 refresh_jti
+	•	对 API 响应时间 P99 目标：< 20ms
+
+⸻
+
+12. 后续扩展
+	•	支持 OIDC / SAML 企业级单点登录
+	•	加入 ABAC（基于属性的授权）
+	•	会话地理位置漂移检测（IP/地理位置）
+	•	添加 Webhook（登录、权限变更事件推送）
+	•	租户隔离（TenantID + RBAC 分区）
