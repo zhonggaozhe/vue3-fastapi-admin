@@ -11,6 +11,7 @@ from app.agents.session import SessionAgent
 from app.agents.token import TokenAgent
 from app.core.database import get_db
 from app.core.redis import get_redis
+from app.core.responses import success_response
 from app.core.security import decode_jwt_token
 from app.schemas.auth import LoginRequest, LoginResponse, LogoutRequest, RefreshRequest
 
@@ -30,24 +31,26 @@ def get_orchestrator() -> AuthOrchestrator:
     return _orchestrator
 
 
-@router.post("/login", response_model=LoginResponse)
+@router.post("/login")
 async def login(
     payload: LoginRequest,
     orchestrator: AuthOrchestrator = Depends(get_orchestrator),
     db: AsyncSession = Depends(get_db),
     redis: Redis = Depends(get_redis),
-) -> LoginResponse:
-    return await orchestrator.login(db, redis, payload)
+) -> dict:
+    result = await orchestrator.login(db, redis, payload)
+    return success_response(result)
 
 
-@router.post("/refresh", response_model=LoginResponse)
+@router.post("/refresh")
 async def refresh(
     payload: RefreshRequest,
     orchestrator: AuthOrchestrator = Depends(get_orchestrator),
     db: AsyncSession = Depends(get_db),
     redis: Redis = Depends(get_redis),
-) -> LoginResponse:
-    return await orchestrator.refresh(db, redis, payload)
+) -> dict:
+    result = await orchestrator.refresh(db, redis, payload)
+    return success_response(result)
 
 
 @router.post("/logout")
@@ -65,5 +68,5 @@ async def logout(
             sub = decode_jwt_token(token).get("sub")
         except ValueError:
             sub = None
-    return await orchestrator.logout(db, redis, sub)
-
+    result = await orchestrator.logout(db, redis, sub)
+    return success_response(result)

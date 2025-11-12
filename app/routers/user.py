@@ -2,14 +2,15 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.responses import success_response
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import RoleBrief, UserRead
 
 router = APIRouter()
 
 
-@router.get("/", response_model=list[UserRead])
-async def list_users(db: AsyncSession = Depends(get_db)) -> list[UserRead]:
+@router.get("/")
+async def list_users(db: AsyncSession = Depends(get_db)) -> dict:
     repo = UserRepository(db)
     users = await repo.list_users()
     response: list[UserRead] = []
@@ -34,5 +35,4 @@ async def list_users(db: AsyncSession = Depends(get_db)) -> list[UserRead]:
                 ),
             )
         )
-    return response
-
+    return success_response(response)

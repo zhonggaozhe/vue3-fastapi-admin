@@ -17,8 +17,8 @@ from app.core.redis import get_redis  # noqa: E402
 from app.core.security import hash_password  # noqa: E402
 from app.main import create_app  # noqa: E402
 from app.models.base import Base  # noqa: E402
-from app.models.menu import Menu  # noqa: E402  pylint: disable=unused-import
-from app.models.role import Permission, Role  # noqa: E402
+from app.models.menu import Menu, MenuType  # noqa: E402
+from app.models.role import Permission, Role, RoleMenu  # noqa: E402
 from app.models.user import User  # noqa: E402
 
 
@@ -94,8 +94,42 @@ async def session_factory(async_engine):
         admin_user.roles.append(admin_role)
         tester.roles.append(test_role)
 
+        dashboard = Menu(
+            id=1,
+            name="Dashboard",
+            title="Dashboard",
+            title_i18n="router.dashboard",
+            path="/dashboard",
+            component="#",
+            order=1,
+            type=MenuType.DIRECTORY,
+        )
+        analysis = Menu(
+            id=2,
+            parent_id=1,
+            name="Analysis",
+            title="Analysis",
+            title_i18n="router.analysis",
+            path="analysis",
+            component="views/Dashboard/Analysis",
+            order=1,
+            type=MenuType.ROUTE,
+        )
+
         session.add_all(
-            [admin_role, test_role, perm_all, perm_create, perm_delete, admin_user, tester]
+            [
+                admin_role,
+                test_role,
+                perm_all,
+                perm_create,
+                perm_delete,
+                admin_user,
+                tester,
+                dashboard,
+                analysis,
+                RoleMenu(id=1, role_id=1, menu_id=1),
+                RoleMenu(id=2, role_id=1, menu_id=2),
+            ]
         )
         await session.commit()
 

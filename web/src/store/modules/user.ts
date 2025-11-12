@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { store } from '../index'
-import { UserLoginType, UserType } from '@/api/login/types'
+import { LoginSession, LoginUserInfo, UserLoginType } from '@/api/login/types'
 import { ElMessageBox } from 'element-plus'
 import { useI18n } from '@/hooks/web/useI18n'
 import { loginOutApi } from '@/api/login'
@@ -8,9 +8,11 @@ import { useTagsViewStore } from './tagsView'
 import router from '@/router'
 
 interface UserState {
-  userInfo?: UserType
+  userInfo?: LoginUserInfo
   tokenKey: string
   token: string
+  refreshToken?: string
+  session?: LoginSession
   roleRouters?: string[] | AppCustomRouteRecordRaw[]
   rememberMe: boolean
   loginInfo?: UserLoginType
@@ -22,6 +24,8 @@ export const useUserStore = defineStore('user', {
       userInfo: undefined,
       tokenKey: 'Authorization',
       token: '',
+      refreshToken: undefined,
+      session: undefined,
       roleRouters: undefined,
       // 记住我
       rememberMe: true,
@@ -35,8 +39,14 @@ export const useUserStore = defineStore('user', {
     getToken(): string {
       return this.token
     },
-    getUserInfo(): UserType | undefined {
+    getUserInfo(): LoginUserInfo | undefined {
       return this.userInfo
+    },
+    getRefreshToken(): string | undefined {
+      return this.refreshToken
+    },
+    getSession(): LoginSession | undefined {
+      return this.session
     },
     getRoleRouters(): string[] | AppCustomRouteRecordRaw[] | undefined {
       return this.roleRouters
@@ -55,8 +65,14 @@ export const useUserStore = defineStore('user', {
     setToken(token: string) {
       this.token = token
     },
-    setUserInfo(userInfo?: UserType) {
+    setUserInfo(userInfo?: LoginUserInfo) {
       this.userInfo = userInfo
+    },
+    setRefreshToken(token?: string) {
+      this.refreshToken = token
+    },
+    setSession(session?: LoginSession) {
+      this.session = session
     },
     setRoleRouters(roleRouters: string[] | AppCustomRouteRecordRaw[]) {
       this.roleRouters = roleRouters
@@ -69,7 +85,7 @@ export const useUserStore = defineStore('user', {
         type: 'warning'
       })
         .then(async () => {
-          const res = await loginOutApi().catch(() => {})
+          const res = await loginOutApi(this.getRefreshToken).catch(() => {})
           if (res) {
             this.reset()
           }
@@ -80,6 +96,8 @@ export const useUserStore = defineStore('user', {
       const tagsViewStore = useTagsViewStore()
       tagsViewStore.delAllViews()
       this.setToken('')
+      this.setRefreshToken(undefined)
+      this.setSession(undefined)
       this.setUserInfo(undefined)
       this.setRoleRouters([])
       router.replace('/login')

@@ -7,11 +7,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
 from app.models.types import jsonb
+from app.models.menu import Menu
 
 if TYPE_CHECKING:  # pragma: no cover
     from app.models.user import User
-    from app.models.menu import Menu
-
 
 class Role(TimestampMixin, Base):
     __tablename__ = "roles"

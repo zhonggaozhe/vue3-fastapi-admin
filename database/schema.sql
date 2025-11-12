@@ -9,6 +9,16 @@ BEGIN
     END IF;
 END$$;
 
+DROP TABLE IF EXISTS audit_logs CASCADE;
+DROP TABLE IF EXISTS role_menus CASCADE;
+DROP TABLE IF EXISTS menu_actions CASCADE;
+DROP TABLE IF EXISTS menus CASCADE;
+DROP TABLE IF EXISTS role_permissions CASCADE;
+DROP TABLE IF EXISTS permissions CASCADE;
+DROP TABLE IF EXISTS user_roles CASCADE;
+DROP TABLE IF EXISTS roles CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
 CREATE TABLE IF NOT EXISTS users (
     id              BIGSERIAL PRIMARY KEY,
     username        CITEXT UNIQUE NOT NULL,
@@ -65,6 +75,7 @@ CREATE TABLE IF NOT EXISTS menus (
     parent_id       BIGINT REFERENCES menus(id) ON DELETE SET NULL,
     name            TEXT UNIQUE NOT NULL,
     title           TEXT NOT NULL,
+    title_i18n      TEXT,
     path            TEXT NOT NULL,
     component       TEXT,
     redirect        TEXT,
@@ -77,6 +88,10 @@ CREATE TABLE IF NOT EXISTS menus (
     affix           BOOLEAN NOT NULL DEFAULT FALSE,
     hidden          BOOLEAN NOT NULL DEFAULT FALSE,
     enabled         BOOLEAN NOT NULL DEFAULT TRUE,
+    active_menu     TEXT,
+    show_breadcrumb BOOLEAN NOT NULL DEFAULT TRUE,
+    no_tags_view    BOOLEAN NOT NULL DEFAULT FALSE,
+    can_to          BOOLEAN NOT NULL DEFAULT FALSE,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -87,6 +102,8 @@ CREATE TABLE IF NOT EXISTS menu_actions (
     code        TEXT NOT NULL,
     label       TEXT NOT NULL,
     description TEXT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE (menu_id, code)
 );
 

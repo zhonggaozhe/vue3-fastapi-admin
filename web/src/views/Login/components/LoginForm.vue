@@ -4,12 +4,12 @@ import { Form, FormSchema } from '@/components/Form'
 import { useI18n } from '@/hooks/web/useI18n'
 import { ElCheckbox, ElLink } from 'element-plus'
 import { useForm } from '@/hooks/web/useForm'
-import { loginApi, getTestRoleApi, getAdminRoleApi } from '@/api/login'
+import { loginApi, getTestRoleApi, getUserRoutesApi } from '@/api/login'
 import { useAppStore } from '@/store/modules/app'
 import { usePermissionStore } from '@/store/modules/permission'
 import { useRouter } from 'vue-router'
 import type { RouteLocationNormalizedLoaded, RouteRecordRaw } from 'vue-router'
-import { UserType } from '@/api/login/types'
+import { UserLoginType } from '@/api/login/types'
 import { useValidator } from '@/hooks/web/useValidator'
 import { Icon } from '@/components/Icon'
 import { useUserStore } from '@/store/modules/user'
@@ -233,12 +233,19 @@ const signIn = async () => {
   await formRef?.validate(async (isValid) => {
     if (isValid) {
       loading.value = true
-      const formData = await getFormData<UserType>()
+      const formData = await getFormData<UserLoginType>()
 
       try {
-        const res = await loginApi(formData)
+        const res = await loginApi({
+          ...formData,
+          deviceId: formData.deviceId || navigator.userAgent
+        })
 
         if (res) {
+          const { tokens, user, session } = res.data
+          userStore.setToken(tokens?.accessToken ? `Bearer ${tokens.accessToken}` : '')
+          userStore.setRefreshToken(tokens?.refreshToken)
+          userStore.setSession(session)
           // 是否记住我
           if (unref(remember)) {
             userStore.setLoginInfo({
@@ -249,7 +256,13 @@ const signIn = async () => {
             userStore.setLoginInfo(undefined)
           }
           userStore.setRememberMe(unref(remember))
-          userStore.setUserInfo(res.data)
+          userStore.setUserInfo({
+            username: user?.username || formData.username,
+            role: user?.role,
+            roleId: user?.roleId,
+            permissions: user?.permissions || [],
+            attributes: user?.attributes
+          })
           // 是否使用动态路由
           if (appStore.getDynamicRouter) {
             getRole()
@@ -271,14 +284,14 @@ const signIn = async () => {
 
 // 获取角色信息
 const getRole = async () => {
-  const formData = await getFormData<UserType>()
+  const formData = await getFormData<UserLoginType>()
   const params = {
-    roleName: formData.username
+    username: userStore.getUserInfo?.username || formData.username
   }
   const res =
     appStore.getDynamicRouter && appStore.getServerDynamicRouter
-      ? await getAdminRoleApi(params)
-      : await getTestRoleApi(params)
+      ? await getUserRoutesApi(params)
+      : await getTestRoleApi({ roleName: params.username })
   if (res) {
     const routers = res.data || []
     userStore.setRoleRouters(routers)

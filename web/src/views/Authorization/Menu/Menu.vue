@@ -1,10 +1,10 @@
 <script setup lang="tsx">
-import { reactive, ref, unref } from 'vue'
-import { getMenuListApi } from '@/api/menu'
+import { reactive, ref, unref, watch } from 'vue'
+import { getMenuListApi, createMenuApi, updateMenuApi, deleteMenuApi } from '@/api/menu'
 import { useTable } from '@/hooks/web/useTable'
 import { useI18n } from '@/hooks/web/useI18n'
 import { Table, TableColumn } from '@/components/Table'
-import { ElTag } from 'element-plus'
+import { ElMessage, ElMessageBox, ElTag } from 'element-plus'
 import { Icon } from '@/components/Icon'
 import { Search } from '@/components/Search'
 import { FormSchema } from '@/components/Form'
@@ -13,6 +13,7 @@ import Write from './components/Write.vue'
 import Detail from './components/Detail.vue'
 import { Dialog } from '@/components/Dialog'
 import { BaseButton } from '@/components/Button'
+import { cloneDeep } from 'lodash-es'
 
 const { t } = useI18n()
 
@@ -116,7 +117,9 @@ const tableColumns = reactive<TableColumn[]>([
             <BaseButton type="success" onClick={() => action(row, 'detail')}>
               {t('exampleDemo.detail')}
             </BaseButton>
-            <BaseButton type="danger">{t('exampleDemo.del')}</BaseButton>
+            <BaseButton type="danger" onClick={() => handleDelete(row)}>
+              {t('exampleDemo.del')}
+            </BaseButton>
           </>
         )
       }
@@ -143,35 +146,136 @@ const dialogTitle = ref('')
 
 const currentRow = ref()
 const actionType = ref('')
+const dialogKey = ref(0)
 
 const writeRef = ref<ComponentRef<typeof Write>>()
 
 const saveLoading = ref(false)
 
-const action = (row: any, type: string) => {
-  dialogTitle.value = t(type === 'edit' ? 'exampleDemo.edit' : 'exampleDemo.detail')
-  actionType.value = type
-  currentRow.value = row
-  dialogVisible.value = true
+const menuMap = ref(new Map<number, any>())
+const buildMenuMap = (list: any[] = []) => {
+  const map = new Map<number, any>()
+  const walk = (nodes: any[]) => {
+    nodes?.forEach((node: any) => {
+      map.set(node.id, node)
+      if (node.children?.length) {
+        walk(node.children)
+      }
+    })
+  }
+  walk(list)
+  return map
+}
+
+watch(
+  () => dataList.value,
+  (val) => {
+    menuMap.value = buildMenuMap(val || [])
+  },
+  { deep: true, immediate: true }
+)
+
+const formatRow = (row: any) => {
+  const parent = row.parentId ? menuMap.value.get(row.parentId) : null
+  return {
+    ...row,
+    parentName: parent?.meta?.title ?? '-'
+  }
 }
 
 const AddAction = () => {
   dialogTitle.value = t('exampleDemo.add')
-  currentRow.value = undefined
   dialogVisible.value = true
-  actionType.value = ''
+  actionType.value = 'add'
+  dialogKey.value++
+  currentRow.value = {
+    type: 0,
+    parentId: null,
+    component: '#',
+    name: '',
+    path: '',
+    status: 1,
+    meta: {
+      title: '',
+      icon: '',
+      alwaysShow: false,
+      noCache: false,
+      breadcrumb: true,
+      affix: false,
+      noTagsView: false,
+      canTo: false,
+      hidden: false,
+      activeMenu: ''
+    },
+    permissionList: []
+  }
+}
+
+const action = (row: any, type: string) => {
+  dialogTitle.value = t(type === 'edit' ? 'exampleDemo.edit' : 'exampleDemo.detail')
+  actionType.value = type
+  currentRow.value = formatRow(cloneDeep(row))
+  dialogVisible.value = true
+  dialogKey.value++
+}
+
+const handleDelete = async (row: any) => {
+  await ElMessageBox.confirm(t('common.deleteConfirm'), t('common.reminder'), {
+    type: 'warning'
+  })
+  await deleteMenuApi(row.id)
+  ElMessage.success('删除成功')
+  await getList()
+}
+
+const transformMenuPayload = (formData: any) => {
+  const meta = formData.meta || {}
+  return {
+    type: formData.type ?? 0,
+    parentId: formData.parentId ?? null,
+    name: formData.name,
+    component: formData.component,
+    path: formData.path,
+    redirect: formData.redirect || null,
+    status: formData.status ?? 1,
+    meta: {
+      title: meta.title,
+      icon: meta.icon || null,
+      alwaysShow: !!meta.alwaysShow,
+      noCache: !!meta.noCache,
+      breadcrumb: meta.breadcrumb ?? true,
+      affix: !!meta.affix,
+      noTagsView: !!meta.noTagsView,
+      canTo: !!meta.canTo,
+      hidden: !!meta.hidden,
+      activeMenu: meta.activeMenu || null
+    },
+    permissionList: (formData.permissionList || []).map((item: any) => ({
+      id: item.id,
+      label: item.label,
+      value: item.value
+    }))
+  }
 }
 
 const save = async () => {
   const write = unref(writeRef)
   const formData = await write?.submit()
-  console.log(formData)
   if (formData) {
     saveLoading.value = true
-    setTimeout(() => {
-      saveLoading.value = false
+    try {
+      const payload = transformMenuPayload(formData)
+      if (actionType.value === 'edit' && currentRow.value?.id) {
+        await updateMenuApi(currentRow.value.id, payload)
+      } else {
+        await createMenuApi(payload)
+      }
+      ElMessage.success('操作成功')
       dialogVisible.value = false
-    }, 1000)
+      await getList()
+    } finally {
+      saveLoading.value = false
+    }
   }
 }
 </script>
@@ -193,7 +297,7 @@ const save = async () => {
   </ContentWrap>
 
   <Dialog v-model="dialogVisible" :title="dialogTitle">
-    <Write v-if="actionType !== 'detail'" ref="writeRef" :current-row="currentRow" />
+    <Write v-if="actionType !== 'detail'" ref="writeRef" :current-row="currentRow" :key="dialogKey" />
 
     <Detail v-if="actionType === 'detail'" :current-row="currentRow" />
 
