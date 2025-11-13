@@ -11,6 +11,7 @@ from app.models.types import jsonb
 
 if TYPE_CHECKING:  # pragma: no cover
     from app.models.role import Role
+    from app.models.department import Department
 
 
 class User(TimestampMixin, Base):
@@ -26,9 +27,15 @@ class User(TimestampMixin, Base):
     mfa_secret: Mapped[str | None] = mapped_column(String(64))
     locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     attributes: Mapped[dict | None] = mapped_column(jsonb, default=dict)
+    department_id: Mapped[int | None] = mapped_column(
+        ForeignKey("departments.id", ondelete="SET NULL")
+    )
 
     roles: Mapped[list["Role"]] = relationship(
         "Role", secondary="user_roles", back_populates="users", lazy="selectin"
+    )
+    department: Mapped["Department | None"] = relationship(
+        "Department", back_populates="users", lazy="joined"
     )
 
 

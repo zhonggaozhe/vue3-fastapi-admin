@@ -17,11 +17,13 @@ import { BaseButton } from '@/components/Button'
 
 const { t } = useI18n()
 
+const currentDepartmentId = ref('')
+
 const { tableRegister, tableState, tableMethods } = useTable({
   fetchDataApi: async () => {
     const { pageSize, currentPage } = tableState
     const res = await getUserByIdApi({
-      id: unref(currentNodeKey),
+      id: unref(currentDepartmentId) || undefined,
       pageIndex: unref(currentPage),
       pageSize: unref(pageSize),
       ...unref(searchParams)
@@ -205,10 +207,12 @@ const departmentList = ref<DepartmentItem[]>([])
 const fetchDepartment = async () => {
   const res = await getDepartmentApi()
   departmentList.value = res.data.list
-  currentNodeKey.value =
-    (res.data.list[0] && res.data.list[0]?.children && res.data.list[0].children[0].id) || ''
+  currentNodeKey.value = ''
+  currentDepartmentId.value = ''
   await nextTick()
-  unref(treeEl)?.setCurrentKey(currentNodeKey.value)
+  unref(treeEl)?.setCurrentKey(undefined)
+  currentPage.value = 1
+  getList()
 }
 fetchDepartment()
 
@@ -223,6 +227,7 @@ watch(
 const currentChange = (data: DepartmentItem) => {
   // if (data.children) return
   currentNodeKey.value = data.id
+  currentDepartmentId.value = data.id
   currentPage.value = 1
   getList()
 }
@@ -277,11 +282,9 @@ const save = async () => {
   if (formData) {
     saveLoading.value = true
     try {
-      const res = await saveUserApi(formData)
-      if (res) {
-        currentPage.value = 1
-        getList()
-      }
+      await saveUserApi(formData)
+      currentPage.value = 1
+      getList()
     } catch (error) {
       console.log(error)
     } finally {

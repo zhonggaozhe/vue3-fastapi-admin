@@ -28,6 +28,15 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_secret_key: str = Field(default="change-me", description="HS* symmetric secret")
     rate_limit_default: int = 100
+    cors_allow_origins: list[str] = Field(
+        default_factory=lambda: [
+            "http://localhost:4000",
+            "http://127.0.0.1:4000",
+        ]
+    )
+    cors_allow_credentials: bool = True
+    cors_allow_methods: list[str] = Field(default_factory=lambda: ["*"])
+    cors_allow_headers: list[str] = Field(default_factory=lambda: ["*"])
 
 
 @lru_cache

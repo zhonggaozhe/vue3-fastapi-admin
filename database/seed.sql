@@ -1,10 +1,43 @@
 -- Seed data for FastAPI Admin backend
 
+TRUNCATE TABLE departments RESTART IDENTITY CASCADE;
 TRUNCATE TABLE role_permissions RESTART IDENTITY CASCADE;
 TRUNCATE TABLE user_roles RESTART IDENTITY CASCADE;
 TRUNCATE TABLE permissions RESTART IDENTITY CASCADE;
 TRUNCATE TABLE users RESTART IDENTITY CASCADE;
 TRUNCATE TABLE roles RESTART IDENTITY CASCADE;
+
+-- Departments
+INSERT INTO departments (id, parent_id, name, remark, is_active, "order", created_at, updated_at)
+VALUES
+    (1, NULL, '厦门总公司', '总部统筹业务', TRUE, 1, '2019-01-04 23:21:13+00', '2019-01-04 23:21:13+00'),
+    (2, NULL, '北京分公司', '华北区域运营', FALSE, 2, '2013-02-20 01:43:52+00', '2013-02-20 01:43:52+00'),
+    (3, NULL, '上海分公司', '华东区域枢纽', TRUE, 3, '2011-09-12 10:18:45+00', '2011-09-12 10:18:45+00'),
+    (4, NULL, '福州分公司', '东南交付中心', TRUE, 4, '2016-04-08 14:32:11+00', '2016-04-08 14:32:11+00'),
+    (5, NULL, '深圳分公司', '华南总部', TRUE, 5, '2018-07-02 08:12:54+00', '2018-07-02 08:12:54+00'),
+    (101, 1, '研发部', '核心产品研发', TRUE, 1, '2019-06-14 09:50:01+00', '2019-06-14 09:50:01+00'),
+    (102, 1, '产品部', '平台规划与设计', TRUE, 2, '2018-07-17 11:47:40+00', '2018-07-17 11:47:40+00'),
+    (103, 1, '运营部', '增长与运营', FALSE, 3, '2017-06-06 18:08:25+00', '2017-06-06 18:08:25+00'),
+    (201, 2, '研发部', '北京技术团队', TRUE, 1, '2015-12-23 07:58:34+00', '2015-12-23 07:58:34+00'),
+    (202, 2, '产品部', '北方解决方案', FALSE, 2, '2009-04-12 00:06:20+00', '2009-04-12 00:06:20+00'),
+    (203, 2, '运营部', '本地化运营', TRUE, 3, '2014-03-09 10:21:12+00', '2014-03-09 10:21:12+00'),
+    (301, 3, '研发部', '工业互联网', TRUE, 1, '2012-05-18 12:10:11+00', '2012-05-18 12:10:11+00'),
+    (302, 3, '市场部', '区域市场拓展', TRUE, 2, '2013-11-05 16:44:22+00', '2013-11-05 16:44:22+00'),
+    (303, 3, '客服部', '客户成功中心', TRUE, 3, '2014-08-21 09:33:02+00', '2014-08-21 09:33:02+00'),
+    (401, 4, '研发部', '交付与集成', TRUE, 1, '2017-10-12 15:03:33+00', '2017-10-12 15:03:33+00'),
+    (402, 4, '运营部', '生态运营', TRUE, 2, '2016-01-19 19:22:47+00', '2016-01-19 19:22:47+00'),
+    (403, 4, '客服部', '客户支持', TRUE, 3, '2018-02-14 07:55:18+00', '2018-02-14 07:55:18+00'),
+    (501, 5, '研发部', '移动端研发', TRUE, 1, '2018-05-10 13:11:29+00', '2018-05-10 13:11:29+00'),
+    (502, 5, '产品部', '海外产品', TRUE, 2, '2019-03-22 09:41:05+00', '2019-03-22 09:41:05+00'),
+    (503, 5, '销售部', '大客户销售', TRUE, 3, '2017-09-30 11:26:44+00', '2017-09-30 11:26:44+00')
+ON CONFLICT (id) DO UPDATE SET
+    parent_id = EXCLUDED.parent_id,
+    name = EXCLUDED.name,
+    remark = EXCLUDED.remark,
+    is_active = EXCLUDED.is_active,
+    "order" = EXCLUDED."order",
+    created_at = EXCLUDED.created_at,
+    updated_at = EXCLUDED.updated_at;
 
 -- Roles
 INSERT INTO roles (id, code, name, description, is_active)
@@ -18,17 +51,18 @@ ON CONFLICT (id) DO UPDATE SET
     is_active = EXCLUDED.is_active;
 
 -- Users
-INSERT INTO users (id, username, email, full_name, password_hash, is_active, is_superuser)
+INSERT INTO users (id, username, email, full_name, password_hash, is_active, is_superuser, department_id)
 VALUES
-    (1, 'admin', 'admin@example.com', 'Admin', '$2b$12$YQd6IGjikqOMc.Bmn8U1guEnkUx8j9i7IjoIESAGOs4TGrmZMJ6uC', TRUE, TRUE),
-    (2, 'test', 'test@example.com', 'Tester', '$2b$12$WhhpBuP7jTV573Bt2EMXxe38Uf.YmfDNwVJjfeJCyhyxtrnt7FsfO', TRUE, FALSE)
+    (1, 'admin', 'admin@example.com', 'Admin', '$2b$12$YQd6IGjikqOMc.Bmn8U1guEnkUx8j9i7IjoIESAGOs4TGrmZMJ6uC', TRUE, TRUE, 101),
+    (2, 'test', 'test@example.com', 'Tester', '$2b$12$WhhpBuP7jTV573Bt2EMXxe38Uf.YmfDNwVJjfeJCyhyxtrnt7FsfO', TRUE, FALSE, 201)
 ON CONFLICT (id) DO UPDATE SET
     username = EXCLUDED.username,
     email = EXCLUDED.email,
     full_name = EXCLUDED.full_name,
     password_hash = EXCLUDED.password_hash,
     is_active = EXCLUDED.is_active,
-    is_superuser = EXCLUDED.is_superuser;
+    is_superuser = EXCLUDED.is_superuser,
+    department_id = EXCLUDED.department_id;
 
 -- Permissions
 INSERT INTO permissions (id, namespace, resource, action, label, effect)
@@ -144,3 +178,14 @@ VALUES
     (23, 2, 13),
     (24, 2, 14)
 ON CONFLICT (role_id, menu_id) DO NOTHING;
+
+-- Reset sequences to max(id)
+SELECT setval(pg_get_serial_sequence('departments', 'id'), COALESCE((SELECT MAX(id) FROM departments), 0) + 1, false);
+SELECT setval(pg_get_serial_sequence('roles', 'id'), COALESCE((SELECT MAX(id) FROM roles), 0) + 1, false);
+SELECT setval(pg_get_serial_sequence('users', 'id'), COALESCE((SELECT MAX(id) FROM users), 0) + 1, false);
+SELECT setval(pg_get_serial_sequence('permissions', 'id'), COALESCE((SELECT MAX(id) FROM permissions), 0) + 1, false);
+SELECT setval(pg_get_serial_sequence('menus', 'id'), COALESCE((SELECT MAX(id) FROM menus), 0) + 1, false);
+SELECT setval(pg_get_serial_sequence('menu_actions', 'id'), COALESCE((SELECT MAX(id) FROM menu_actions), 0) + 1, false);
+SELECT setval(pg_get_serial_sequence('role_permissions', 'id'), COALESCE((SELECT MAX(id) FROM role_permissions), 0) + 1, false);
+SELECT setval(pg_get_serial_sequence('user_roles', 'id'), COALESCE((SELECT MAX(id) FROM user_roles), 0) + 1, false);
+SELECT setval(pg_get_serial_sequence('role_menus', 'id'), COALESCE((SELECT MAX(id) FROM role_menus), 0) + 1, false);

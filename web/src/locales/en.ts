@@ -577,7 +577,9 @@ export default {
     roleName: 'Role name',
     role: 'Role',
     // 菜单分配
-    menu: 'Menu allocation'
+    menu: 'Menu allocation',
+    roleInUse: 'Users are still assigned to this role, deletion is not allowed',
+    roleExists: 'Role code or name already exists, please choose another'
   },
   inputPasswordDemo: {
     title: 'InputPassword',

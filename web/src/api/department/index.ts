@@ -2,11 +2,11 @@ import request from '@/axios'
 import { DepartmentListResponse, DepartmentUserParams, DepartmentUserResponse } from './types'
 
 export const getDepartmentApi = () => {
-  return request.get<DepartmentListResponse>({ url: '/mock/department/list' })
+  return request.get<DepartmentListResponse>({ url: '/departments/list' })
 }
 
 export const getUserByIdApi = (params: DepartmentUserParams) => {
-  return request.get<DepartmentUserResponse>({ url: '/mock/department/users', params })
+  return request.get<DepartmentUserResponse>({ url: '/departments/users', params })
 }
 
 export const deleteUserByIdApi = (ids: string[] | number[]) => {
@@ -14,7 +14,7 @@ export const deleteUserByIdApi = (ids: string[] | number[]) => {
 }
 
 export const saveUserApi = (data: any) => {
-  return request.post({ url: '/mock/department/user/save', data })
+  return request.post({ url: '/users', data })
 }
 
 export const saveDepartmentApi = (data: any) => {
@@ -26,5 +26,5 @@ export const deleteDepartmentApi = (ids: string[] | number[]) => {
 }
 
 export const getDepartmentTableApi = (params: any) => {
-  return request.get({ url: '/mock/department/table/list', params })
+  return request.get({ url: '/departments/table/list', params })
 }

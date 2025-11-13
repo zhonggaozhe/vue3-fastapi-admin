@@ -36,6 +36,11 @@ class MenuRepository:
         menus = result.scalars().unique().all()
         return self._build_route_tree(menus, include_details=True)
 
+    def build_tree_from_menus(
+        self, menus: list[Menu], include_details: bool = True
+    ) -> list[dict[str, Any]]:
+        return self._build_route_tree(menus, include_details=include_details)
+
     async def get_menu(self, menu_id: int) -> Menu | None:
         result = await self.session.execute(
             self._base_query().where(Menu.id == menu_id)

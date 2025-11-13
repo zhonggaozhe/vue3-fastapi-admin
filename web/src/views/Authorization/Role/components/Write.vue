@@ -6,7 +6,7 @@ import { useValidator } from '@/hooks/web/useValidator'
 import { useI18n } from '@/hooks/web/useI18n'
 import { ElTree, ElCheckboxGroup, ElCheckbox } from 'element-plus'
 import { getMenuListApi } from '@/api/menu'
-import { filter, eachTree } from '@/utils/tree'
+import { eachTree } from '@/utils/tree'
 import { findIndex } from '@/utils'
 
 const { t } = useI18n()
@@ -29,6 +29,11 @@ const formSchema = ref<FormSchema[]>([
     component: 'Input'
   },
   {
+    field: 'role',
+    label: t('role.role'),
+    component: 'Input'
+  },
+  {
     field: 'status',
     label: t('menu.status'),
     component: 'Select',
@@ -43,6 +48,15 @@ const formSchema = ref<FormSchema[]>([
           value: 1
         }
       ]
+    }
+  },
+  {
+    field: 'remark',
+    label: t('userDemo.remark'),
+    component: 'Input',
+    componentProps: {
+      type: 'textarea',
+      rows: 3
     }
   },
   {
@@ -63,7 +77,6 @@ const formSchema = ref<FormSchema[]>([
                     show-checkbox
                     node-key="id"
                     highlight-current
-                    check-strictly
                     expand-on-click-node={false}
                     data={treeData.value}
                     onNode-click={nodeClick}
@@ -98,6 +111,7 @@ const nodeClick = (treeData: any) => {
   currentTreeData.value = treeData
 }
 
+
 const rules = reactive({
   roleName: [required()],
   role: [required()],
@@ -108,10 +122,19 @@ const { formRegister, formMethods } = useForm()
 const { setValues, getFormData, getElFormExpose } = formMethods
 
 const treeData = ref([])
+const nodeMap = ref(new Map<number, any>())
+const buildNodeMap = (list: any[]) => {
+  const map = new Map<number, any>()
+  eachTree(list, (node: any) => {
+    map.set(node.id, node)
+  })
+  nodeMap.value = map
+}
 const getMenuList = async () => {
   const res = await getMenuListApi()
   if (res) {
     treeData.value = res.data.list
+    buildNodeMap(treeData.value)
     if (!props.currentRow) return
     await nextTick()
     const checked: any[] = []
@@ -149,12 +172,18 @@ const submit = async () => {
   })
   if (valid) {
     const formData = await getFormData()
-    const checkedKeys = unref(treeRef)?.getCheckedKeys() || []
-    const data = filter(unref(treeData), (item: any) => {
-      return checkedKeys.includes(item.id)
-    })
-    formData.menu = data || []
-    console.log(formData)
+    const tree = unref(treeRef)
+    const checkedKeys = tree
+      ? [
+          ...(tree.getCheckedKeys?.() || []),
+          ...(tree.getHalfCheckedKeys?.() || [])
+        ]
+      : []
+    const normalizedKeys = checkedKeys.map((id: string | number) => Number(id))
+    const selectedMenus = normalizedKeys
+      .map((id) => nodeMap.value.get(id))
+      .filter(Boolean)
+    formData.menu = selectedMenus || []
     return formData
   }
 }

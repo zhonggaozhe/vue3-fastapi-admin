@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.responses import success_response
 from app.repositories.user_repository import UserRepository
-from app.schemas.user import RoleBrief, UserRead
+from app.schemas.user import RoleBrief, UserCreatePayload, UserRead
 
 router = APIRouter()
 
@@ -36,3 +37,16 @@ async def list_users(db: AsyncSession = Depends(get_db)) -> dict:
             )
         )
     return success_response(response)
+
+
+@router.post("/")
+async def create_user(payload: UserCreatePayload, db: AsyncSession = Depends(get_db)) -> dict:
+    repo = UserRepository(db)
+    try:
+        user = await repo.create_user(payload)
+    except IntegrityError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="USER_ALREADY_EXISTS"
+        ) from None
+
+    return success_response({"id": user.id})

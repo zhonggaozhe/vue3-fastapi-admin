@@ -566,7 +566,9 @@ export default {
   role: {
     roleName: '角色名称',
     role: '角色',
-    menu: '菜单分配'
+    menu: '菜单分配',
+    roleInUse: '该角色仍有用户在使用，无法删除',
+    roleExists: '角色标识或名称已存在，请更换后再试'
   },
   inputPasswordDemo: {
     title: '密码输入框',

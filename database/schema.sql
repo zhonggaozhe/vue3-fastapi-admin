@@ -13,11 +13,25 @@ DROP TABLE IF EXISTS audit_logs CASCADE;
 DROP TABLE IF EXISTS role_menus CASCADE;
 DROP TABLE IF EXISTS menu_actions CASCADE;
 DROP TABLE IF EXISTS menus CASCADE;
+DROP TABLE IF EXISTS departments CASCADE;
 DROP TABLE IF EXISTS role_permissions CASCADE;
 DROP TABLE IF EXISTS permissions CASCADE;
 DROP TABLE IF EXISTS user_roles CASCADE;
 DROP TABLE IF EXISTS roles CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
+
+CREATE TABLE IF NOT EXISTS departments (
+    id          BIGSERIAL PRIMARY KEY,
+    parent_id   BIGINT REFERENCES departments(id) ON DELETE SET NULL,
+    name        TEXT NOT NULL,
+    remark      TEXT,
+    is_active   BOOLEAN NOT NULL DEFAULT TRUE,
+    "order"     INT NOT NULL DEFAULT 0,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_departments_parent ON departments(parent_id);
 
 CREATE TABLE IF NOT EXISTS users (
     id              BIGSERIAL PRIMARY KEY,
@@ -30,6 +44,7 @@ CREATE TABLE IF NOT EXISTS users (
     mfa_secret      TEXT,
     locked_until    TIMESTAMPTZ,
     attributes      JSONB DEFAULT '{}'::JSONB,
+    department_id   BIGINT REFERENCES departments(id) ON DELETE SET NULL,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

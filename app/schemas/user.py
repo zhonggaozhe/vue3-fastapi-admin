@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 class RoleBrief(BaseModel):
@@ -27,3 +27,16 @@ class UserRead(UserBase):
 
     class Config:
         from_attributes = True
+
+
+class DepartmentRef(BaseModel):
+    id: int | str
+
+
+class UserCreatePayload(BaseModel):
+    username: str
+    account: str
+    email: EmailStr | None = None
+    department: DepartmentRef | None = None
+    role: list[int] = Field(default_factory=list)
+    password: str | None = None
