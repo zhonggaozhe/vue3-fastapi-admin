@@ -4,6 +4,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.settings import get_settings
 from app.models.menu import Menu
 from app.models.role import Role
 from app.models.user import UserRole
@@ -13,6 +14,7 @@ from app.schemas.role import RoleCreate, RoleUpdate
 class RoleRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
+        self.settings = get_settings()
 
     def _base_query(self):
         return select(Role).options(
@@ -32,6 +34,8 @@ class RoleRepository:
         return result.scalars().unique().first()
 
     async def create_role(self, payload: RoleCreate) -> Role:
+        if payload.role_code == self.settings.super_admin_role_code:
+            raise ValueError("SUPER_ADMIN_RESERVED")
         await self._ensure_unique(code=payload.role_code, name=payload.role_name)
         role = Role(
             code=payload.role_code,
@@ -47,6 +51,10 @@ class RoleRepository:
         return await self.get_role(role.id)
 
     async def update_role(self, role: Role, payload: RoleUpdate) -> Role:
+        if role.code == self.settings.super_admin_role_code:
+            raise ValueError("SUPER_ADMIN_IMMUTABLE")
+        if payload.role_code == self.settings.super_admin_role_code:
+            raise ValueError("SUPER_ADMIN_RESERVED")
         await self._ensure_unique(code=payload.role_code, name=payload.role_name, exclude_id=role.id)
         role.code = payload.role_code
         role.name = payload.role_name
@@ -57,6 +65,8 @@ class RoleRepository:
         return await self.get_role(role.id)
 
     async def delete_role(self, role: Role) -> None:
+        if role.code == self.settings.super_admin_role_code:
+            raise ValueError("SUPER_ADMIN_IMMUTABLE")
         user_count = await self.session.scalar(
             select(func.count()).select_from(UserRole).where(UserRole.role_id == role.id)
         )

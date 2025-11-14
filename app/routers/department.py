@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.auth import permission_required
 from app.core.database import get_db
 from app.core.responses import success_response
 from app.repositories.department_repository import DepartmentRepository
@@ -8,7 +9,6 @@ from app.repositories.user_repository import UserRepository
 
 router = APIRouter()
 legacy_router = APIRouter(prefix="/department")
-
 
 def _format_datetime(value) -> str | None:
     if not value:
@@ -23,12 +23,18 @@ async def _department_tree_payload(db: AsyncSession) -> dict:
 
 
 @router.get("/list")
-async def list_departments(db: AsyncSession = Depends(get_db)) -> dict:
+@permission_required("department", "list")
+async def list_departments(
+    db: AsyncSession = Depends(get_db),
+) -> dict:
     return await _department_tree_payload(db)
 
 
 @legacy_router.get("/list")
-async def legacy_list_departments(db: AsyncSession = Depends(get_db)) -> dict:
+@permission_required("department", "list")
+async def legacy_list_departments(
+    db: AsyncSession = Depends(get_db),
+) -> dict:
     return await _department_tree_payload(db)
 
 
@@ -41,6 +47,7 @@ async def _department_table_payload(
 
 
 @router.get("/table/list")
+@permission_required("department", "list")
 async def department_table_list(
     pageIndex: int = Query(1, ge=1),
     pageSize: int = Query(10, ge=1, le=100),
@@ -50,6 +57,7 @@ async def department_table_list(
 
 
 @legacy_router.get("/table/list")
+@permission_required("department", "list")
 async def legacy_department_table_list(
     pageIndex: int = Query(1, ge=1),
     pageSize: int = Query(10, ge=1, le=100),
@@ -71,6 +79,7 @@ async def _department_users_payload(
             {"id": str(dept.id), "departmentName": dept.name} if dept else None
         )
         role_names = [role.name for role in user.roles]
+        role_ids = [role.id for role in user.roles]
         return {
             "id": str(user.id),
             "username": user.full_name or user.username,
@@ -78,6 +87,7 @@ async def _department_users_payload(
             "email": user.email,
             "createTime": _format_datetime(user.created_at),
             "role": ", ".join(role_names),
+            "roleIds": role_ids,
             "department": department_info,
         }
 
@@ -85,6 +95,7 @@ async def _department_users_payload(
 
 
 @router.get("/users")
+@permission_required("department", "users")
 async def department_users(
     id: str | None = Query(default=None, description="Department ID"),
     pageIndex: int = Query(1, ge=1),
@@ -95,6 +106,7 @@ async def department_users(
 
 
 @legacy_router.get("/users")
+@permission_required("department", "users")
 async def legacy_department_users(
     id: str | None = Query(default=None, description="Department ID"),
     pageIndex: int = Query(1, ge=1),

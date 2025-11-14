@@ -43,3 +43,9 @@ web/.nuxt/
 # Logs / runtime
 nohup.out
 /app/log/*.log
+
+
+# web
+web/.pnpm-lock.yaml
+.pnpm-store
+

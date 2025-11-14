@@ -19,3 +19,11 @@ class RoleCreate(RoleUpsertBase):
 
 class RoleUpdate(RoleUpsertBase):
     pass
+
+
+class RoleEditPayload(RoleUpsertBase):
+    id: int
+
+
+class RoleDeletePayload(BaseModel):
+    ids: List[int]

@@ -240,14 +240,42 @@ const filterNode = (value: string, data: DepartmentItem) => {
 const dialogVisible = ref(false)
 const dialogTitle = ref('')
 
-const currentRow = ref<DepartmentUserItem>()
-const actionType = ref('')
+type ActionType = 'add' | 'edit' | 'detail'
+
+const currentRow = ref<any>()
+const actionType = ref<ActionType>('add')
+
+const createEmptyFormData = () => ({
+  id: undefined,
+  username: '',
+  account: '',
+  email: '',
+  department: {},
+  role: [] as Array<number | string>,
+  password: undefined
+})
+
+const mapRowToFormData = (row: DepartmentUserItem) => ({
+  id: row.id,
+  username: row.username,
+  account: row.account,
+  email: row.email,
+  department: row.department || {},
+  role: row.roleIds ? row.roleIds.map((item) => Number(item)) : [],
+  password: undefined
+})
 
 const AddAction = () => {
   dialogTitle.value = t('exampleDemo.add')
-  currentRow.value = undefined
+  actionType.value = 'add'
+  const selectedDepartment = unref(treeEl)?.getCurrentNode()
+  currentRow.value = {
+    ...createEmptyFormData(),
+    department: selectedDepartment
+      ? { id: selectedDepartment.id, departmentName: selectedDepartment.departmentName }
+      : {}
+  }
   dialogVisible.value = true
-  actionType.value = ''
 }
 
 const delLoading = ref(false)
@@ -265,10 +293,10 @@ const delData = async (row?: DepartmentUserItem) => {
   })
 }
 
-const action = (row: DepartmentUserItem, type: string) => {
+const action = (row: DepartmentUserItem, type: ActionType) => {
   dialogTitle.value = t(type === 'edit' ? 'exampleDemo.edit' : 'exampleDemo.detail')
   actionType.value = type
-  currentRow.value = { ...row, department: unref(treeEl)?.getCurrentNode() || {} }
+  currentRow.value = type === 'edit' ? mapRowToFormData(row) : row
   dialogVisible.value = true
 }
 
@@ -282,7 +310,17 @@ const save = async () => {
   if (formData) {
     saveLoading.value = true
     try {
-      await saveUserApi(formData)
+      const payload: Record<string, any> = {
+        ...formData,
+        id:
+          actionType.value === 'edit' && currentRow.value?.id
+            ? Number(currentRow.value.id)
+            : undefined
+      }
+      if (Array.isArray(payload.role)) {
+        payload.role = payload.role.map((item: number | string) => Number(item))
+      }
+      await saveUserApi(payload)
       currentPage.value = 1
       getList()
     } catch (error) {

@@ -45,7 +45,8 @@ const defaultResponseInterceptors = (response: AxiosResponse) => {
     return { code, message, data }
   }
 
-  ElMessage.error(message || 'Server Error')
+  const friendly = message && SUPER_ADMIN_ERROR_MAP[message]
+  ElMessage.error(friendly || message || 'Server Error')
   if (code === 401) {
     const userStore = useUserStoreWithOut()
     userStore.logout()
@@ -54,3 +55,8 @@ const defaultResponseInterceptors = (response: AxiosResponse) => {
 }
 
 export { defaultResponseInterceptors, defaultRequestInterceptors }
+const SUPER_ADMIN_ERROR_MAP: Record<string, string> = {
+  SUPER_ADMIN_IMMUTABLE: '超级管理员不可修改或删除',
+  SUPER_ADMIN_RESERVED: '超级管理员保留，无法重复创建',
+  SUPER_ADMIN_INVISIBLE: '超级管理员不会展示在列表中'
+}

@@ -40,3 +40,15 @@ class UserCreatePayload(BaseModel):
     department: DepartmentRef | None = None
     role: list[int] = Field(default_factory=list)
     password: str | None = None
+
+
+class UserUpdatePayload(UserCreatePayload):
+    id: int
+
+
+class UserSavePayload(UserCreatePayload):
+    id: int | None = None
+
+
+class UserDeletePayload(BaseModel):
+    ids: list[int]

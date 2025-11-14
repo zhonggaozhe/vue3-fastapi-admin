@@ -5,16 +5,22 @@ export const getMenuListApi = () => {
 }
 
 export const createMenuApi = (data: any) => {
-  return request.post({ url: '/menus', data })
+  return request.post({ url: '/menus/save', data })
 }
 
 export const updateMenuApi = (id: number, data: any) => {
-  return request.put({ url: `/menus/${id}`, data })
+  return request.post({ url: '/menus/edit', data: { ...data, id } })
 }
 
 export const deleteMenuApi = (id: number, options?: { force?: boolean }) => {
-  const params = options?.force ? { force: options.force } : undefined
-  return request.delete({ url: `/menus/${id}`, params })
+  const data: Record<string, any> = { ids: [id] }
+  if (options?.force) {
+    data.force = true
+  }
+  return request.post({
+    url: '/menus/del',
+    data
+  })
 }
 
 export const getMenuDetailApi = (id: number) => {

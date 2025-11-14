@@ -123,6 +123,7 @@ const { setValues, getFormData, getElFormExpose } = formMethods
 
 const treeData = ref([])
 const nodeMap = ref(new Map<number, any>())
+
 const buildNodeMap = (list: any[]) => {
   const map = new Map<number, any>()
   eachTree(list, (node: any) => {
@@ -130,39 +131,46 @@ const buildNodeMap = (list: any[]) => {
   })
   nodeMap.value = map
 }
+
+const applyCurrentMenus = async (currentRow?: any) => {
+  if (!currentRow || !currentRow.menu || !treeData.value.length) {
+    unref(treeRef)?.setCheckedKeys([], false)
+    return
+  }
+  const checked: any[] = []
+  eachTree(currentRow.menu, (v) => {
+    checked.push({
+      id: v.id,
+      permission: v.meta?.permission || []
+    })
+  })
+
+  eachTree(treeData.value, (node) => {
+    const index = findIndex(checked, (item) => item.id === node.id)
+    if (index > -1) {
+      const meta = { ...(node.meta || {}) }
+      meta.permission = checked[index].permission
+      node.meta = meta
+    }
+  })
+
+  await nextTick()
+  const tree = unref(treeRef)
+  tree?.setCheckedKeys([], false)
+  checked.forEach((item) => {
+    tree?.setChecked(item.id, true, false)
+  })
+}
+
 const getMenuList = async () => {
   const res = await getMenuListApi()
   if (res) {
     treeData.value = res.data.list
     buildNodeMap(treeData.value)
-    if (!props.currentRow) return
-    await nextTick()
-    const checked: any[] = []
-    eachTree(props.currentRow.menu, (v) => {
-      checked.push({
-        id: v.id,
-        permission: v.meta?.permission || []
-      })
-    })
-    eachTree(treeData.value, (v) => {
-      const index = findIndex(checked, (item) => {
-        return item.id === v.id
-      })
-      if (index > -1) {
-        const meta = { ...(v.meta || {}) }
-        meta.permission = checked[index].permission
-        v.meta = meta
-      }
-    })
-    for (const item of checked) {
-      unref(treeRef)?.setChecked(item.id, true, false)
-    }
-    // unref(treeRef)?.setCheckedKeys(
-    //   checked.map((v) => v.id),
-    //   false
-    // )
+    await applyCurrentMenus(props.currentRow || undefined)
   }
 }
+
 getMenuList()
 
 const submit = async () => {
@@ -193,6 +201,7 @@ watch(
   (currentRow) => {
     if (!currentRow) return
     setValues(currentRow)
+    applyCurrentMenus(currentRow)
   },
   {
     deep: true,

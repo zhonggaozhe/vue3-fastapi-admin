@@ -14,8 +14,34 @@ class RBACAgent:
             principal["attributes"] = user.attributes
         return principal
 
-    async def is_allowed(self, user: AuthenticatedUser, resource: str, action: str) -> bool:
+    async def is_allowed(
+        self, user: AuthenticatedUser, resource: str, action: str, namespace: str | None = None
+    ) -> bool:
         if user.is_superuser or "*.*.*" in user.permissions:
             return True
-        token = f"{resource}:{action}"
-        return any(perm == token or perm.endswith(":*") for perm in user.permissions)
+
+        target_namespace = namespace or ""
+        for perm in user.permissions:
+            if self._matches_permission(perm, target_namespace, resource, action):
+                return True
+        return False
+
+    @staticmethod
+    def _matches_permission(
+        permission: str, namespace: str, resource: str, action: str
+    ) -> bool:
+        parts = permission.split(":")
+
+        if len(parts) == 2:
+            perm_resource, perm_action = parts
+            return perm_resource in (resource, "*") and perm_action in (action, "*")
+
+        if len(parts) == 3:
+            perm_namespace, perm_resource, perm_action = parts
+            return (
+                perm_namespace in (namespace, "*")
+                and perm_resource in (resource, "*")
+                and perm_action in (action, "*")
+            )
+
+        return False

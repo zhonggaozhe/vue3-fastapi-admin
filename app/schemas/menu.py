@@ -45,3 +45,12 @@ class MenuCreate(MenuBase):
 
 class MenuUpdate(MenuBase):
     pass
+
+
+class MenuEditPayload(MenuUpdate):
+    id: int
+
+
+class MenuDeletePayload(BaseModel):
+    ids: List[int]
+    force: bool = False

@@ -37,6 +37,8 @@ class Settings(BaseSettings):
     cors_allow_credentials: bool = True
     cors_allow_methods: list[str] = Field(default_factory=lambda: ["*"])
     cors_allow_headers: list[str] = Field(default_factory=lambda: ["*"])
+    super_admin_username: str = Field(default="admin", description="Reserved super admin username")
+    super_admin_role_code: str = Field(default="admin", description="Reserved super admin role code")
 
 
 @lru_cache

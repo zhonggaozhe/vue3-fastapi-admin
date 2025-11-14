@@ -14,7 +14,7 @@ export const deleteUserByIdApi = (ids: string[] | number[]) => {
 }
 
 export const saveUserApi = (data: any) => {
-  return request.post({ url: '/users', data })
+  return request.post({ url: '/users/save', data })
 }
 
 export const saveDepartmentApi = (data: any) => {

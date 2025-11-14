@@ -4,13 +4,14 @@ from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.audit import AuditAgent
-from app.agents.identity import IdentityAgent
+from app.agents.identity import AuthenticatedUser, IdentityAgent
 from app.agents.ratelimit import RateLimitAgent
 from app.agents.rbac import RBACAgent
 from app.agents.session import SessionAgent
 from app.agents.token import TokenAgent
 from app.core.errors import raise_error
 from app.core.security import decode_jwt_token
+from app.repositories.menu_repository import MenuRepository
 from app.schemas.auth import LoginRequest, LoginResponse, RefreshRequest, SessionInfo, TokenPair
 
 
@@ -36,6 +37,7 @@ class AuthOrchestrator:
             db, event_type="login_success", user_id=user.id, detail={"device_id": payload.device_id}
         )
         principal = await self.rbac_agent.build_principal(user)
+        routes = await self._load_routes(db, user)
         token_pair = TokenPair(
             accessToken=tokens.access_token,
             refreshToken=tokens.refresh_token,
@@ -44,7 +46,7 @@ class AuthOrchestrator:
             payload=tokens.access_payload,
         )
         session_payload = SessionInfo(sid=session_info["sid"], expires_at=session_info["expires_at"])
-        return LoginResponse(tokens=token_pair, session=session_payload, user=principal)
+        return LoginResponse(tokens=token_pair, session=session_payload, user=principal, routes=routes)
 
     async def refresh(self, db: AsyncSession, redis: Redis, payload: RefreshRequest) -> LoginResponse:
         try:
@@ -67,6 +69,7 @@ class AuthOrchestrator:
             db, event_type="token_refresh", user_id=user.id, detail={"device_id": payload.device_id}
         )
         principal = await self.rbac_agent.build_principal(user)
+        routes = await self._load_routes(db, user)
         token_pair = TokenPair(
             accessToken=tokens.access_token,
             refreshToken=tokens.refresh_token,
@@ -75,10 +78,15 @@ class AuthOrchestrator:
             payload=tokens.access_payload,
         )
         session_payload = SessionInfo(sid=session_info["sid"], expires_at=session_info["expires_at"])
-        return LoginResponse(tokens=token_pair, session=session_payload, user=principal)
+        return LoginResponse(tokens=token_pair, session=session_payload, user=principal, routes=routes)
 
     async def logout(self, db: AsyncSession, redis: Redis, token_sub: str | None) -> dict:
         await self.audit_agent.log_event(
             db, event_type="logout", user_id=int(token_sub) if token_sub else None, detail=None
         )
         return {"ok": True}
+
+    async def _load_routes(self, db: AsyncSession, user: AuthenticatedUser) -> list[dict]:
+        menu_repo = MenuRepository(db)
+        role_ids = [role.id for role in user.roles]
+        return await menu_repo.fetch_routes_for_roles(role_ids, include_all=user.is_superuser)
