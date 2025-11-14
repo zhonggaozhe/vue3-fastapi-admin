@@ -23,6 +23,13 @@ class Settings(BaseSettings):
     redoc_url: Optional[str] = "/redoc"
     access_token_ttl_minutes: int = 15
     refresh_token_ttl_minutes: int = 24 * 60
+    login_failure_limit: int = Field(
+        default=5, description="Consecutive failed attempts allowed before locking the account"
+    )
+    login_failure_window_minutes: int = Field(
+        default=15, description="Time window for counting consecutive login failures"
+    )
+    login_lock_minutes: int = Field(default=15, description="Account lock duration in minutes")
     jwt_public_key_path: str = "certs/jwt_public.pem"
     jwt_private_key_path: str = "certs/jwt_private.pem"
     jwt_algorithm: str = "HS256"

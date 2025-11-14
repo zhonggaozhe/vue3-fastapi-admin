@@ -1,5 +1,7 @@
 import pytest
 
+from app.core.settings import get_settings
+
 
 @pytest.mark.asyncio
 async def test_login_success(client):
@@ -26,6 +28,29 @@ async def test_login_invalid_password(client):
     assert response.status_code == 200
     payload = response.json()
     assert payload["code"] == 401
+
+
+@pytest.mark.asyncio
+async def test_account_lock_after_failed_attempts(client):
+    limit = get_settings().login_failure_limit
+    for attempt in range(limit):
+        response = await client.post(
+            "/auth/login",
+            json={"username": "test", "password": "wrong"},
+        )
+        payload = response.json()
+        assert response.status_code == 200
+        if attempt < limit - 1:
+            assert payload["code"] == 401
+        else:
+            assert payload["code"] == 423
+
+    response = await client.post(
+        "/auth/login",
+        json={"username": "test", "password": "test"},
+    )
+    assert response.status_code == 200
+    assert response.json()["code"] == 423
 
 
 @pytest.mark.asyncio

@@ -42,6 +42,7 @@ class FakeRedis:
 
     async def delete(self, key: str) -> None:
         self.hashes.pop(key, None)
+        self.counters.pop(key, None)
 
 
 @pytest.fixture(scope="session")

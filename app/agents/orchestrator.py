@@ -28,8 +28,8 @@ class AuthOrchestrator:
         await self.rate_limit_agent.check(
             redis, key=f"rl:login:{payload.username}", limit=5, window_seconds=60
         )
-        user = await self.identity_agent.authenticate(db, payload)
-        tokens = await self.token_agent.issue_pair(user, payload.device_id)
+        user = await self.identity_agent.authenticate(db, redis, payload)
+        tokens = await self.token_agent.issue_pair(redis, user, payload.device_id)
         session_info = await self.session_agent.create_session(
             redis, user_id=user.id, refresh_jti=tokens.refresh_payload["jti"], device_id=payload.device_id
         )
@@ -61,7 +61,7 @@ class AuthOrchestrator:
         if not user_id:
             raise_error("AUTH.REFRESH_INVALID")
         user = await self.identity_agent.load_user(db, int(user_id))
-        tokens = await self.token_agent.issue_pair(user, payload.device_id)
+        tokens = await self.token_agent.issue_pair(redis, user, payload.device_id)
         session_info = await self.session_agent.create_session(
             redis, user_id=user.id, refresh_jti=tokens.refresh_payload["jti"], device_id=payload.device_id
         )
