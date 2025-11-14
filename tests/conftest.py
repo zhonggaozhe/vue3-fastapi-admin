@@ -12,6 +12,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+from app.agents.audit import get_audit_agent  # noqa: E402
 from app.core.database import get_db  # noqa: E402
 from app.core.redis import get_redis  # noqa: E402
 from app.core.security import hash_password  # noqa: E402
@@ -141,6 +142,7 @@ async def session_factory(async_engine):
 async def test_app(session_factory):
     app = create_app()
     fake_redis = FakeRedis()
+    get_audit_agent().configure_session_factory(session_factory)
 
     async def _override_get_db():
         async with session_factory() as session:

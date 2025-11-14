@@ -114,3 +114,38 @@ class TokenAgent:
                 continue
             clean[key] = str(value)
         return clean
+
+    async def verify_refresh_token(self, redis: Redis, refresh_token: str) -> dict | None:
+        """
+        验证 refresh token 是否有效
+        返回 refresh token 的 Redis 数据，如果无效返回 None
+        """
+        refresh_key = self._refresh_key(refresh_token)
+        data = await redis.hgetall(refresh_key)
+        if not data:
+            return None
+        if data.get("status") != "active":
+            return None
+        return data
+
+    async def is_token_blacklisted(self, redis: Redis, jti: str) -> bool:
+        """检查 token 是否在黑名单中"""
+        key = f"jti:black:{jti}"
+        exists = await redis.exists(key)
+        return exists > 0
+
+    async def blacklist_token(self, redis: Redis, jti: str, exp: int | None = None) -> None:
+        """
+        将 token 加入黑名单
+        exp: token 的过期时间（Unix timestamp），用于设置黑名单的 TTL
+        """
+        key = f"jti:black:{jti}"
+        await redis.set(key, "1")
+        if exp:
+            # 设置黑名单的过期时间为原 token 的过期时间
+            await redis.expireat(key, int(exp))
+
+    async def revoke_refresh_token(self, redis: Redis, refresh_token: str) -> None:
+        """撤销 refresh token（标记为已使用）"""
+        refresh_key = self._refresh_key(refresh_token)
+        await redis.hset(refresh_key, mapping={"status": "revoked"})

@@ -9,6 +9,16 @@ export const loginApi = (data: UserLoginType): Promise<IResponse<LoginResult>> =
   return request.post({ url: '/auth/login', data })
 }
 
+export const refreshTokenApi = (refreshToken: string, deviceId?: string): Promise<IResponse<LoginResult>> => {
+  return request.post({
+    url: '/auth/refresh',
+    data: {
+      refreshToken,
+      deviceId: deviceId || navigator.userAgent
+    }
+  })
+}
+
 export const loginOutApi = (refreshToken?: string): Promise<IResponse> => {
   return request.post({
     url: '/auth/logout',

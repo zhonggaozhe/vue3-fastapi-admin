@@ -1,13 +1,27 @@
--- Seed data for FastAPI Admin backend
+-- ============================================================================
+-- Seed Data for FastAPI Admin Service
+-- ============================================================================
+-- 测试数据插入脚本
+-- 执行顺序：先执行 schema.sql 创建表结构，再执行此文件插入测试数据
+-- ============================================================================
 
-TRUNCATE TABLE departments RESTART IDENTITY CASCADE;
+-- ============================================================================
+-- 清空现有数据（按依赖关系倒序）
+-- ============================================================================
+TRUNCATE TABLE audit_log RESTART IDENTITY CASCADE;
+TRUNCATE TABLE role_menus RESTART IDENTITY CASCADE;
+TRUNCATE TABLE menu_actions RESTART IDENTITY CASCADE;
 TRUNCATE TABLE role_permissions RESTART IDENTITY CASCADE;
 TRUNCATE TABLE user_roles RESTART IDENTITY CASCADE;
+TRUNCATE TABLE menus RESTART IDENTITY CASCADE;
 TRUNCATE TABLE permissions RESTART IDENTITY CASCADE;
 TRUNCATE TABLE users RESTART IDENTITY CASCADE;
 TRUNCATE TABLE roles RESTART IDENTITY CASCADE;
+TRUNCATE TABLE departments RESTART IDENTITY CASCADE;
 
--- Departments
+-- ============================================================================
+-- 插入部门数据
+-- ============================================================================
 INSERT INTO departments (id, parent_id, name, remark, is_active, "order", created_at, updated_at)
 VALUES
     (1, NULL, '厦门总公司', '总部统筹业务', TRUE, 1, '2019-01-04 23:21:13+00', '2019-01-04 23:21:13+00'),
@@ -39,7 +53,9 @@ ON CONFLICT (id) DO UPDATE SET
     created_at = EXCLUDED.created_at,
     updated_at = EXCLUDED.updated_at;
 
--- Roles
+-- ============================================================================
+-- 插入角色数据
+-- ============================================================================
 INSERT INTO roles (id, code, name, description, is_active)
 VALUES
     (1, 'admin', 'Administrator', '全量权限', TRUE),
@@ -50,7 +66,12 @@ ON CONFLICT (id) DO UPDATE SET
     description = EXCLUDED.description,
     is_active = EXCLUDED.is_active;
 
--- Users
+-- ============================================================================
+-- 插入用户数据
+-- 密码说明：
+--   admin: admin (bcrypt hash)
+--   test: test (bcrypt hash)
+-- ============================================================================
 INSERT INTO users (id, username, email, full_name, password_hash, is_active, is_superuser, department_id)
 VALUES
     (1, 'admin', 'admin@example.com', 'Admin', '$2b$12$YQd6IGjikqOMc.Bmn8U1guEnkUx8j9i7IjoIESAGOs4TGrmZMJ6uC', TRUE, TRUE, 101),
@@ -64,128 +85,153 @@ ON CONFLICT (id) DO UPDATE SET
     is_superuser = EXCLUDED.is_superuser,
     department_id = EXCLUDED.department_id;
 
--- Permissions
+-- ============================================================================
+-- 插入权限数据
+-- ============================================================================
 INSERT INTO permissions (id, namespace, resource, action, label, effect)
 VALUES
     (1, '*', '*', '*', 'All Access', 'allow'),
     (2, 'example', 'dialog', 'create', '示例弹窗-新增', 'allow'),
     (3, 'example', 'dialog', 'delete', '示例弹窗-删除', 'allow')
-ON CONFLICT (id) DO UPDATE SET
-    namespace = EXCLUDED.namespace,
-    resource = EXCLUDED.resource,
-    action = EXCLUDED.action,
+ON CONFLICT (namespace, resource, action) DO UPDATE SET
     label = EXCLUDED.label,
     effect = EXCLUDED.effect;
 
--- Menus & Actions
-TRUNCATE TABLE menu_actions RESTART IDENTITY CASCADE;
-TRUNCATE TABLE menus RESTART IDENTITY CASCADE;
-
+-- ============================================================================
+-- 插入菜单数据
+-- ============================================================================
 INSERT INTO menus (
     id, parent_id, name, title, title_i18n, path, component, redirect, "order", icon, type,
     is_external, always_show, keep_alive, affix, hidden, enabled,
     active_menu, show_breadcrumb, no_tags_view, can_to
 )
 VALUES
+    -- 一级菜单：首页
     (1, NULL, 'Dashboard', '首页', 'router.dashboard', '/dashboard', '#', '/dashboard/analysis', 1, 'vi-ant-design:dashboard-filled', 'directory', FALSE, TRUE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE),
     (2, 1, 'Analysis', '分析页', 'router.analysis', 'analysis', 'views/Dashboard/Analysis', NULL, 1, NULL, 'route', FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE),
     (3, 1, 'Workplace', '工作台', 'router.workplace', 'workplace', 'views/Dashboard/Workplace', NULL, 2, NULL, 'route', FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE),
+    
+    -- 一级菜单：文档
     (4, NULL, 'ExternalLink', '文档', 'router.document', '/external-link', '#', NULL, 2, 'vi-clarity:document-solid', 'directory', FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE),
     (5, 4, 'DocumentLink', '文档', 'router.document', 'https://element-plus-admin-doc.cn/', NULL, NULL, 1, NULL, 'route', TRUE, FALSE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE),
+    
+    -- 一级菜单：多级菜单示例
     (6, NULL, 'Level', '菜单', 'router.level', '/level', '#', '/level/menu1/menu1-1/menu1-1-1', 3, 'vi-carbon:skill-level-advanced', 'directory', FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE),
     (7, 6, 'Menu1', '菜单1', 'router.menu1', 'menu1', '##', '/level/menu1/menu1-1/menu1-1-1', 1, NULL, 'directory', FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE),
     (8, 7, 'Menu11', '菜单1-1', 'router.menu11', 'menu1-1', '##', '/level/menu1/menu1-1/menu1-1-1', 1, NULL, 'directory', FALSE, TRUE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE),
     (9, 8, 'Menu111', '菜单1-1-1', 'router.menu111', 'menu1-1-1', 'views/Level/Menu111', NULL, 1, NULL, 'route', FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE),
     (10, 7, 'Menu12', '菜单1-2', 'router.menu12', 'menu1-2', 'views/Level/Menu12', NULL, 2, NULL, 'route', FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE),
     (11, 6, 'Menu2Demo', '菜单2', 'router.menu2', 'menu2', 'views/Level/Menu2', NULL, 2, NULL, 'route', FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE),
+    
+    -- 一级菜单：综合示例
     (12, NULL, 'Example', '综合示例', 'router.example', '/example', '#', '/example/example-dialog', 4, 'vi-ep:management', 'directory', FALSE, TRUE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE),
     (13, 12, 'ExampleDialog', '综合示例-弹窗', 'router.exampleDialog', 'example-dialog', 'views/Example/Dialog/ExampleDialog', NULL, 1, NULL, 'route', FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE),
     (14, 12, 'ExamplePage', '综合示例-页面', 'router.examplePage', 'example-page', 'views/Example/Page/ExamplePage', NULL, 2, NULL, 'route', FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE),
     (15, 12, 'ExampleAdd', '综合示例-新增', 'router.exampleAdd', 'example-add', 'views/Example/Page/ExampleAdd', NULL, 3, NULL, 'route', FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, '/example/example-page', TRUE, TRUE, FALSE),
     (16, 12, 'ExampleEdit', '综合示例-编辑', 'router.exampleEdit', 'example-edit', 'views/Example/Page/ExampleEdit', NULL, 4, NULL, 'route', FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, '/example/example-page', TRUE, TRUE, FALSE),
     (17, 12, 'ExampleDetail', '综合示例-详情', 'router.exampleDetail', 'example-detail', 'views/Example/Page/ExampleDetail', NULL, 5, NULL, 'route', FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, '/example/example-page', TRUE, TRUE, FALSE),
+    
+    -- 一级菜单：系统设置
     (18, NULL, 'System', '系统设置', 'router.authorization', '/system', '#', '/system/user', 5, 'vi-ep:setting', 'directory', FALSE, TRUE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE),
     (19, 18, 'SystemUser', '用户管理', 'router.user', 'user', 'views/Authorization/User/User', NULL, 1, NULL, 'route', FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE),
     (20, 18, 'SystemMenu', '菜单管理', 'router.menuManagement', 'menu', 'views/Authorization/Menu/Menu', NULL, 2, NULL, 'route', FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE),
     (21, 18, 'SystemRole', '角色管理', 'router.role', 'role', 'views/Authorization/Role/Role', NULL, 3, NULL, 'route', FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE);
 
+-- ============================================================================
+-- 插入菜单操作数据（按钮权限）
+-- ============================================================================
 INSERT INTO menu_actions (id, menu_id, code, label)
 VALUES
+    -- 分析页按钮权限
     (1, 2, 'add', '新增'),
     (2, 2, 'edit', '编辑'),
+    
+    -- 工作台按钮权限
     (3, 3, 'add', '新增'),
     (4, 3, 'edit', '编辑'),
     (5, 3, 'delete', '删除'),
+    
+    -- 综合示例-弹窗按钮权限
     (6, 13, 'add', '新增'),
     (7, 13, 'edit', '编辑'),
     (8, 13, 'delete', '删除'),
     (9, 13, 'view', '查看'),
+    
+    -- 综合示例-页面按钮权限
     (10, 14, 'add', '新增'),
     (11, 14, 'edit', '编辑'),
     (12, 14, 'delete', '删除'),
     (13, 14, 'view', '查看'),
+    
+    -- 用户管理按钮权限
     (14, 19, 'add', '新增'),
     (15, 19, 'edit', '编辑'),
     (16, 19, 'delete', '删除'),
     (17, 19, 'view', '查看'),
+    
+    -- 菜单管理按钮权限
     (18, 20, 'add', '新增'),
     (19, 20, 'edit', '编辑'),
     (20, 20, 'delete', '删除'),
     (21, 20, 'view', '查看'),
+    
+    -- 角色管理按钮权限
     (22, 21, 'add', '新增'),
     (23, 21, 'edit', '编辑'),
     (24, 21, 'delete', '删除'),
-    (25, 21, 'view', '查看');
+    (25, 21, 'view', '查看')
+ON CONFLICT (id) DO UPDATE SET
+    menu_id = EXCLUDED.menu_id,
+    code = EXCLUDED.code,
+    label = EXCLUDED.label;
 
--- Relations
-INSERT INTO user_roles (id, user_id, role_id)
+-- ============================================================================
+-- 插入关联关系数据
+-- ============================================================================
+
+-- 用户角色关联
+INSERT INTO user_roles (user_id, role_id)
 VALUES
-    (1, 1, 1),
-    (2, 2, 2)
+    (1, 1),  -- admin 用户 -> admin 角色
+    (2, 2)   -- test 用户 -> test 角色
 ON CONFLICT (user_id, role_id) DO NOTHING;
 
-INSERT INTO role_permissions (id, role_id, permission_id)
+-- 角色权限关联
+INSERT INTO role_permissions (role_id, permission_id)
 VALUES
-    (1, 1, 1),
-    (2, 2, 2),
-    (3, 2, 3)
+    (1, 1),  -- admin 角色 -> 所有权限 (*.*.*)
+    (2, 2),  -- test 角色 -> 示例弹窗-新增
+    (2, 3)   -- test 角色 -> 示例弹窗-删除
 ON CONFLICT (role_id, permission_id) DO NOTHING;
 
-INSERT INTO role_menus (id, role_id, menu_id)
+-- 角色菜单关联
+INSERT INTO role_menus (role_id, menu_id)
 VALUES
-    (1, 1, 1),
-    (2, 1, 2),
-    (3, 1, 3),
-    (4, 1, 4),
-    (5, 1, 5),
-    (6, 1, 6),
-    (7, 1, 7),
-    (8, 1, 8),
-    (9, 1, 9),
-    (10, 1, 10),
-    (11, 1, 11),
-    (12, 1, 12),
-    (13, 1, 13),
-    (14, 1, 14),
-    (15, 1, 15),
-    (16, 1, 16),
-    (17, 1, 17),
-    (18, 1, 18),
-    (19, 1, 19),
-    (20, 1, 20),
-    (21, 1, 21),
-    (22, 2, 12),
-    (23, 2, 13),
-    (24, 2, 14)
+    -- admin 角色拥有所有菜单
+    (1, 1), (1, 2), (1, 3), (1, 4), (1, 5),
+    (1, 6), (1, 7), (1, 8), (1, 9), (1, 10), (1, 11),
+    (1, 12), (1, 13), (1, 14), (1, 15), (1, 16), (1, 17),
+    (1, 18), (1, 19), (1, 20), (1, 21),
+    
+    -- test 角色只拥有综合示例相关菜单
+    (2, 12), (2, 13), (2, 14)
 ON CONFLICT (role_id, menu_id) DO NOTHING;
 
--- Reset sequences to max(id)
+-- ============================================================================
+-- 重置序列（确保自增ID从正确的位置开始）
+-- 注意：关联表（user_roles, role_permissions, role_menus）没有序列，因为它们使用复合主键
+-- ============================================================================
 SELECT setval(pg_get_serial_sequence('departments', 'id'), COALESCE((SELECT MAX(id) FROM departments), 0) + 1, false);
 SELECT setval(pg_get_serial_sequence('roles', 'id'), COALESCE((SELECT MAX(id) FROM roles), 0) + 1, false);
 SELECT setval(pg_get_serial_sequence('users', 'id'), COALESCE((SELECT MAX(id) FROM users), 0) + 1, false);
 SELECT setval(pg_get_serial_sequence('permissions', 'id'), COALESCE((SELECT MAX(id) FROM permissions), 0) + 1, false);
 SELECT setval(pg_get_serial_sequence('menus', 'id'), COALESCE((SELECT MAX(id) FROM menus), 0) + 1, false);
 SELECT setval(pg_get_serial_sequence('menu_actions', 'id'), COALESCE((SELECT MAX(id) FROM menu_actions), 0) + 1, false);
-SELECT setval(pg_get_serial_sequence('role_permissions', 'id'), COALESCE((SELECT MAX(id) FROM role_permissions), 0) + 1, false);
-SELECT setval(pg_get_serial_sequence('user_roles', 'id'), COALESCE((SELECT MAX(id) FROM user_roles), 0) + 1, false);
-SELECT setval(pg_get_serial_sequence('role_menus', 'id'), COALESCE((SELECT MAX(id) FROM role_menus), 0) + 1, false);
+
+-- ============================================================================
+-- 测试数据插入完成
+-- ============================================================================
+-- 默认账号：
+--   - admin / admin (超级管理员，拥有所有权限)
+--   - test / test (测试账号，只有示例权限)
+-- ============================================================================

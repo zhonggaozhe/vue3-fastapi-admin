@@ -173,6 +173,7 @@ export default {
     PicturePreview: '表格图片预览',
     department: '部门管理',
     menuManagement: '菜单管理',
+    audit: '审计日志',
     permission: '权限测试页',
     function: '功能',
     multipleTabs: '多开标签页',

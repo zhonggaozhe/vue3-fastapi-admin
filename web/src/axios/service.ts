@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios'
-import { defaultRequestInterceptors, defaultResponseInterceptors } from './config'
+import { defaultRequestInterceptors, defaultResponseInterceptors, tokenRefreshInterceptor } from './config'
 
 import { AxiosInstance, InternalAxiosRequestConfig, RequestConfig, AxiosResponse } from './types'
 import { ElMessage } from 'element-plus'
@@ -40,6 +40,9 @@ axiosInstance.interceptors.response.use(
 )
 
 axiosInstance.interceptors.request.use(defaultRequestInterceptors)
+// 先注册 token 刷新拦截器（处理 401 错误）
+axiosInstance.interceptors.response.use(undefined, tokenRefreshInterceptor)
+// 再注册默认响应拦截器（处理业务逻辑）
 axiosInstance.interceptors.response.use(defaultResponseInterceptors)
 
 const service = {

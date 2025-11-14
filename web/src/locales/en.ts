@@ -175,6 +175,7 @@ export default {
     PicturePreview: 'Table Image Preview',
     department: 'Department management',
     menuManagement: 'Menu management',
+    audit: 'Audit Log',
     // 权限测试页面
     permission: 'Permission test page',
     function: 'Function',

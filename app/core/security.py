@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from jose import JWTError, jwt
+from jose import ExpiredSignatureError, JWTError, jwt
 from passlib.context import CryptContext
 
 from app.core.settings import get_settings
@@ -65,5 +65,7 @@ def decode_jwt_token(token: str) -> dict[str, Any]:
     settings = get_settings()
     try:
         return jwt.decode(token, get_verification_key(), algorithms=[settings.jwt_algorithm])
+    except ExpiredSignatureError:
+        raise ValueError("Token expired")
     except JWTError as exc:  # pragma: no cover - thin wrapper
         raise ValueError("Invalid token") from exc
