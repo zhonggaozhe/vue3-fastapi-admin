@@ -8,7 +8,7 @@ from app.core.audit_actions import AuditAction
 from app.core.auth import (
     ensure_permission,
     get_current_user,
-    permission_required,
+    permission_guard,
 )
 from app.core.database import get_db
 from app.core.responses import success_response
@@ -25,8 +25,7 @@ from app.schemas.user import (
 router = APIRouter()
 
 
-@router.get("/list")
-@permission_required("user", "list")
+@router.get("/list", dependencies=[permission_guard("user", "list")])
 async def list_users(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
@@ -67,7 +66,7 @@ async def save_user(
 ) -> dict:
     repo = UserRepository(db)
     if payload.id:
-        await ensure_permission(current_user, "user", "update", request=request)
+        await ensure_permission(current_user, "user", "update")
         user = await repo.get_by_id(payload.id)
         if not user:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -79,7 +78,7 @@ async def save_user(
             operator=current_user,
             audit_agent=audit_agent,
         )
-    await ensure_permission(current_user, "user", "create", request=request)
+    await ensure_permission(current_user, "user", "create")
     return await _create_user(
         repo,
         payload,
@@ -89,8 +88,7 @@ async def save_user(
     )
 
 
-@router.post("/edit")
-@permission_required("user", "update")
+@router.post("/edit", dependencies=[permission_guard("user", "update")])
 async def edit_user(
     payload: UserUpdatePayload,
     request: Request,
@@ -112,8 +110,7 @@ async def edit_user(
     )
 
 
-@router.post("/del")
-@permission_required("user", "delete")
+@router.post("/del", dependencies=[permission_guard("user", "delete")])
 async def delete_user(
     payload: UserDeletePayload,
     request: Request,

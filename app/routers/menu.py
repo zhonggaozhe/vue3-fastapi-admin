@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.identity import AuthenticatedUser
-from app.core.auth import permission_required, require_authenticated_user
+from app.core.auth import permission_guard, require_authenticated_user
 from app.core.database import get_db
 from app.core.errors import raise_error
 from app.core.responses import success_response
@@ -18,8 +18,7 @@ async def _menu_list_payload(db: AsyncSession) -> dict:
     return success_response({"list": tree})
 
 
-@router.get("/list")
-@permission_required("menu", "list")
+@router.get("/list", dependencies=[permission_guard("menu", "list")])
 async def list_menus_alias(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
@@ -47,8 +46,7 @@ async def get_menu_routes(
     return success_response(routes)
 
 
-@router.get("/{menu_id}")
-@permission_required("menu", "list")
+@router.get("/{menu_id}", dependencies=[permission_guard("menu", "list")])
 async def get_menu_detail(
     menu_id: int,
     db: AsyncSession = Depends(get_db),
@@ -60,8 +58,7 @@ async def get_menu_detail(
     return success_response(menu_repo.serialize_menu(menu))
 
 
-@router.post("/save")
-@permission_required("menu", "create")
+@router.post("/save", dependencies=[permission_guard("menu", "create")])
 async def create_menu(
     payload: MenuCreate,
     db: AsyncSession = Depends(get_db),
@@ -71,8 +68,7 @@ async def create_menu(
     return success_response(menu_repo.serialize_menu(menu))
 
 
-@router.post("/edit")
-@permission_required("menu", "update")
+@router.post("/edit", dependencies=[permission_guard("menu", "update")])
 async def edit_menu(
     payload: MenuEditPayload,
     db: AsyncSession = Depends(get_db),
@@ -86,8 +82,7 @@ async def edit_menu(
     return success_response(menu_repo.serialize_menu(menu))
 
 
-@router.put("/{menu_id}")
-@permission_required("menu", "update")
+@router.put("/{menu_id}", dependencies=[permission_guard("menu", "update")])
 async def update_menu(
     menu_id: int,
     payload: MenuUpdate,
@@ -101,8 +96,7 @@ async def update_menu(
     return success_response(menu_repo.serialize_menu(menu))
 
 
-@router.post("/del")
-@permission_required("menu", "delete")
+@router.post("/del", dependencies=[permission_guard("menu", "delete")])
 async def delete_menu_batch(
     payload: MenuDeletePayload,
     db: AsyncSession = Depends(get_db),
@@ -126,8 +120,7 @@ async def delete_menu_batch(
     return success_response({"deleted": deleted})
 
 
-@router.delete("/{menu_id}")
-@permission_required("menu", "delete")
+@router.delete("/{menu_id}", dependencies=[permission_guard("menu", "delete")])
 async def delete_menu(
     menu_id: int,
     force: bool = Query(False, description="是否级联删除子菜单"),

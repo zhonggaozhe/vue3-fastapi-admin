@@ -5,7 +5,7 @@ from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.identity import AuthenticatedUser
-from app.core.auth import get_current_user, permission_required
+from app.core.auth import get_current_user, permission_guard
 from app.core.database import get_db
 from app.core.responses import success_response
 from app.models.audit import AuditLog
@@ -14,8 +14,7 @@ from app.schemas.audit import AuditLogListResponse, AuditLogQuery, AuditLogRead
 router = APIRouter()
 
 
-@router.get("/list", response_model=dict)
-@permission_required("audit", "list")
+@router.get("/list", response_model=dict, dependencies=[permission_guard("audit", "list")])
 async def list_audit_logs(
     operator_id: int | None = Query(default=None),
     operator_name: str | None = Query(default=None),
@@ -74,8 +73,11 @@ async def list_audit_logs(
     })
 
 
-@router.get("/{log_id}", response_model=dict)
-@permission_required("audit", "read")
+@router.get(
+    "/{log_id}",
+    response_model=dict,
+    dependencies=[permission_guard("audit", "read")],
+)
 async def get_audit_log(
     log_id: int,
     db: AsyncSession = Depends(get_db),
@@ -91,4 +93,3 @@ async def get_audit_log(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Audit log not found")
     
     return success_response(AuditLogRead.model_validate(log))
-

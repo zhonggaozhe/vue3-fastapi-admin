@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import permission_required
+from app.core.auth import permission_guard
 from app.core.database import get_db
 from app.core.responses import success_response
 from app.repositories.department_repository import DepartmentRepository
@@ -21,8 +21,7 @@ async def _department_tree_payload(db: AsyncSession) -> dict:
     return success_response({"list": data})
 
 
-@router.get("/list")
-@permission_required("department", "list")
+@router.get("/list", dependencies=[permission_guard("department", "list")])
 async def list_departments(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
@@ -37,8 +36,7 @@ async def _department_table_payload(
     return success_response({"list": data, "total": total})
 
 
-@router.get("/table/list")
-@permission_required("department", "list")
+@router.get("/table/list", dependencies=[permission_guard("department", "list")])
 async def department_table_list(
     pageIndex: int = Query(1, ge=1),
     pageSize: int = Query(10, ge=1, le=100),
@@ -75,8 +73,7 @@ async def _department_users_payload(
     return success_response({"list": [serialize(user) for user in users], "total": total})
 
 
-@router.get("/users")
-@permission_required("department", "users")
+@router.get("/users", dependencies=[permission_guard("department", "users")])
 async def department_users(
     id: str | None = Query(default=None, description="Department ID"),
     pageIndex: int = Query(1, ge=1),
@@ -84,4 +81,3 @@ async def department_users(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     return await _department_users_payload(id, pageIndex, pageSize, db)
-

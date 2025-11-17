@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.agents.audit import AuditAgent, get_audit_agent
 from app.agents.identity import AuthenticatedUser
 from app.core.audit_actions import AuditAction
-from app.core.auth import get_current_user, permission_required
+from app.core.auth import get_current_user, permission_guard
 from app.core.database import get_db
 from app.core.responses import success_response
 from app.core.settings import get_settings
@@ -60,16 +60,14 @@ async def _role_list_payload(db: AsyncSession) -> dict:
     return success_response({"list": role_items, "total": len(role_items)})
 
 
-@router.get("/list")
-@permission_required("role", "list")
+@router.get("/list", dependencies=[permission_guard("role", "list")])
 async def list_roles_alias(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     return await _role_list_payload(db)
 
 
-@router.post("/save")
-@permission_required("role", "create")
+@router.post("/save", dependencies=[permission_guard("role", "create")])
 async def create_role(
     payload: RoleCreate,
     request: Request,
@@ -114,8 +112,7 @@ async def create_role(
     return success_response(_serialize_role(role, menu_repo))
 
 
-@router.post("/edit")
-@permission_required("role", "update")
+@router.post("/edit", dependencies=[permission_guard("role", "update")])
 async def edit_role(
     payload: RoleEditPayload,
     request: Request,
@@ -162,8 +159,7 @@ async def edit_role(
     return success_response(_serialize_role(role, menu_repo))
 
 
-@router.put("/{role_id}")
-@permission_required("role", "update")
+@router.put("/{role_id}", dependencies=[permission_guard("role", "update")])
 async def update_role(
     role_id: int,
     payload: RoleUpdate,
@@ -214,8 +210,7 @@ async def update_role(
     return success_response(_serialize_role(role, menu_repo))
 
 
-@router.post("/del")
-@permission_required("role", "delete")
+@router.post("/del", dependencies=[permission_guard("role", "delete")])
 async def delete_roles(
     payload: RoleDeletePayload,
     request: Request,
@@ -257,8 +252,7 @@ async def delete_roles(
     return success_response({"deleted": deleted})
 
 
-@router.delete("/{role_id}")
-@permission_required("role", "delete")
+@router.delete("/{role_id}", dependencies=[permission_guard("role", "delete")])
 async def delete_role(
     role_id: int,
     request: Request,

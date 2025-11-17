@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from functools import wraps
-from inspect import iscoroutinefunction
-
 from fastapi import Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -58,27 +55,6 @@ def require_permission(resource: str, action: str, namespace: str | None = "syst
 
 def permission_guard(resource: str, action: str, namespace: str | None = "system"):
     return Depends(require_permission(resource, action, namespace))
-
-
-def permission_required(resource: str, action: str, namespace: str | None = "system"):
-    guard = permission_guard(resource, action, namespace)
-
-    def decorator(func):
-        if iscoroutinefunction(func):
-
-            @wraps(func)
-            async def async_wrapper(*args, __permission=guard, **kwargs):  # type: ignore[misc]
-                return await func(*args, **kwargs)
-
-            return async_wrapper
-
-        @wraps(func)
-        def sync_wrapper(*args, __permission=guard, **kwargs):  # type: ignore[misc]
-            return func(*args, **kwargs)
-
-        return sync_wrapper
-
-    return decorator
 
 
 async def ensure_permission(
