@@ -1,5 +1,9 @@
 import axios, { AxiosError } from 'axios'
-import { defaultRequestInterceptors, defaultResponseInterceptors, tokenRefreshInterceptor } from './config'
+import {
+  defaultRequestInterceptors,
+  defaultResponseInterceptors,
+  tokenRefreshInterceptor
+} from './config'
 
 import { AxiosInstance, InternalAxiosRequestConfig, RequestConfig, AxiosResponse } from './types'
 import { ElMessage } from 'element-plus'

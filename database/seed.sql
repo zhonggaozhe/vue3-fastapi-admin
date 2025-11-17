@@ -92,7 +92,9 @@ INSERT INTO permissions (id, namespace, resource, action, label, effect)
 VALUES
     (1, '*', '*', '*', 'All Access', 'allow'),
     (2, 'example', 'dialog', 'create', '示例弹窗-新增', 'allow'),
-    (3, 'example', 'dialog', 'delete', '示例弹窗-删除', 'allow')
+    (3, 'example', 'dialog', 'delete', '示例弹窗-删除', 'allow'),
+    (4, 'system', 'audit', 'list', '审计日志-列表', 'allow'),
+    (5, 'system', 'audit', 'read', '审计日志-查看', 'allow')
 ON CONFLICT (namespace, resource, action) DO UPDATE SET
     label = EXCLUDED.label,
     effect = EXCLUDED.effect;
@@ -132,10 +134,11 @@ VALUES
     (17, 12, 'ExampleDetail', '综合示例-详情', 'router.exampleDetail', 'example-detail', 'views/Example/Page/ExampleDetail', NULL, 5, NULL, 'route', FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, '/example/example-page', TRUE, TRUE, FALSE),
     
     -- 一级菜单：系统设置
-    (18, NULL, 'System', '系统设置', 'router.authorization', '/system', '#', '/system/user', 5, 'vi-ep:setting', 'directory', FALSE, TRUE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE),
+    (18, NULL, 'System', '系统设置', 'router.authorization', '/authorization', '#', '/authorization/user', 5, 'vi-eos-icons:role-binding', 'directory', FALSE, TRUE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE),
     (19, 18, 'SystemUser', '用户管理', 'router.user', 'user', 'views/Authorization/User/User', NULL, 1, NULL, 'route', FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE),
     (20, 18, 'SystemMenu', '菜单管理', 'router.menuManagement', 'menu', 'views/Authorization/Menu/Menu', NULL, 2, NULL, 'route', FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE),
-    (21, 18, 'SystemRole', '角色管理', 'router.role', 'role', 'views/Authorization/Role/Role', NULL, 3, NULL, 'route', FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE);
+    (21, 18, 'SystemRole', '角色管理', 'router.role', 'role', 'views/Authorization/Role/Role', NULL, 3, NULL, 'route', FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE),
+    (22, 18, 'SystemAudit', '审计日志', 'router.audit', 'audit', 'views/Authorization/Audit/Audit', NULL, 4, NULL, 'route', FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE);
 
 -- ============================================================================
 -- 插入菜单操作数据（按钮权限）
@@ -179,7 +182,11 @@ VALUES
     (22, 21, 'add', '新增'),
     (23, 21, 'edit', '编辑'),
     (24, 21, 'delete', '删除'),
-    (25, 21, 'view', '查看')
+    (25, 21, 'view', '查看'),
+    
+    -- 审计日志按钮权限
+    (26, 22, 'list', '列表'),
+    (27, 22, 'read', '查看')
 ON CONFLICT (id) DO UPDATE SET
     menu_id = EXCLUDED.menu_id,
     code = EXCLUDED.code,
@@ -211,7 +218,7 @@ VALUES
     (1, 1), (1, 2), (1, 3), (1, 4), (1, 5),
     (1, 6), (1, 7), (1, 8), (1, 9), (1, 10), (1, 11),
     (1, 12), (1, 13), (1, 14), (1, 15), (1, 16), (1, 17),
-    (1, 18), (1, 19), (1, 20), (1, 21),
+    (1, 18), (1, 19), (1, 20), (1, 21), (1, 22),
     
     -- test 角色只拥有综合示例相关菜单
     (2, 12), (2, 13), (2, 14)
@@ -227,6 +234,7 @@ SELECT setval(pg_get_serial_sequence('users', 'id'), COALESCE((SELECT MAX(id) FR
 SELECT setval(pg_get_serial_sequence('permissions', 'id'), COALESCE((SELECT MAX(id) FROM permissions), 0) + 1, false);
 SELECT setval(pg_get_serial_sequence('menus', 'id'), COALESCE((SELECT MAX(id) FROM menus), 0) + 1, false);
 SELECT setval(pg_get_serial_sequence('menu_actions', 'id'), COALESCE((SELECT MAX(id) FROM menu_actions), 0) + 1, false);
+SELECT setval(pg_get_serial_sequence('audit_log', 'id'), COALESCE((SELECT MAX(id) FROM audit_log), 0) + 1, false);
 
 -- ============================================================================
 -- 测试数据插入完成

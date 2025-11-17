@@ -13,7 +13,6 @@ from app.repositories.role_repository import RoleRepository
 from app.schemas.role import RoleCreate, RoleDeletePayload, RoleEditPayload, RoleUpdate
 
 router = APIRouter()
-legacy_router = APIRouter(prefix="/role")
 
 settings = get_settings()
 
@@ -63,14 +62,6 @@ async def _role_list_payload(db: AsyncSession) -> dict:
 @router.get("/list")
 @permission_required("role", "list")
 async def list_roles_alias(
-    db: AsyncSession = Depends(get_db),
-) -> dict:
-    return await _role_list_payload(db)
-
-
-@legacy_router.get("/list")
-@permission_required("role", "list")
-async def legacy_role_list(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     return await _role_list_payload(db)

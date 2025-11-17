@@ -36,11 +36,8 @@ def create_app() -> FastAPI:
     app.include_router(auth.router, prefix="/auth", tags=["auth"])
     app.include_router(user.router, prefix="/users", tags=["users"])
     app.include_router(menu.router, prefix="/menus", tags=["menus"])
-    app.include_router(menu.legacy_router, tags=["menu"])
     app.include_router(role.router, prefix="/roles", tags=["roles"])
-    app.include_router(role.legacy_router, tags=["role"])
     app.include_router(department.router, prefix="/departments", tags=["departments"])
-    app.include_router(department.legacy_router, tags=["department"])
     app.include_router(audit.router, prefix="/audit", tags=["audit"])
 
     @app.exception_handler(HTTPException)

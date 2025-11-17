@@ -1,198 +1,208 @@
-<template>
-  <ContentWrap>
-    <!-- 搜索工作栏 -->
-    <el-form
-      class="-mb-15px"
-      :model="queryParams"
-      ref="queryFormRef"
-      :inline="true"
-      label-width="100px"
-    >
-      <el-form-item label="操作者ID" prop="operator_id">
-        <el-input
-          v-model="queryParams.operator_id"
-          placeholder="请输入操作者ID"
-          clearable
-          @keyup.enter="handleQuery"
-          class="!w-240px"
-        />
-      </el-form-item>
-      <el-form-item label="操作者名称" prop="operator_name">
-        <el-input
-          v-model="queryParams.operator_name"
-          placeholder="请输入操作者名称"
-          clearable
-          @keyup.enter="handleQuery"
-          class="!w-240px"
-        />
-      </el-form-item>
-      <el-form-item label="操作类型" prop="action">
-        <el-input
-          v-model="queryParams.action"
-          placeholder="请输入操作类型"
-          clearable
-          @keyup.enter="handleQuery"
-          class="!w-240px"
-        />
-      </el-form-item>
-      <el-form-item label="资源类型" prop="resource_type">
-        <el-input
-          v-model="queryParams.resource_type"
-          placeholder="请输入资源类型"
-          clearable
-          @keyup.enter="handleQuery"
-          class="!w-240px"
-        />
-      </el-form-item>
-      <el-form-item label="操作结果" prop="result_status">
-        <el-select
-          v-model="queryParams.result_status"
-          placeholder="请选择操作结果"
-          clearable
-          class="!w-240px"
-        >
-          <el-option label="成功" :value="1" />
-          <el-option label="失败" :value="0" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="操作时间" prop="dateRange">
-        <el-date-picker
-          v-model="dateRange"
-          type="datetimerange"
-          value-format="YYYY-MM-DD HH:mm:ss"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
-          :default-time="[new Date('2000-01-01 00:00:00'), new Date('2000-01-01 23:59:59')]"
-          class="!w-240px"
-        />
-      </el-form-item>
-      <el-form-item>
-        <el-button @click="handleQuery">
-          <Icon icon="ep:search" class="mr-5px" />
-          搜索
-        </el-button>
-        <el-button @click="resetQuery">
-          <Icon icon="ep:refresh" class="mr-5px" />
-          重置
-        </el-button>
-      </el-form-item>
-    </el-form>
-  </ContentWrap>
-
-  <!-- 列表 -->
-  <ContentWrap>
-    <el-table v-loading="loading" :data="list" stripe show-overflow-tooltip>
-      <el-table-column label="ID" prop="id" width="80" />
-      <el-table-column label="操作者" width="120">
-        <template #default="{ row }">
-          <div>
-            <div v-if="row.operator_name">{{ row.operator_name }}</div>
-            <div v-else class="text-gray-400">-</div>
-            <div v-if="row.operator_id" class="text-xs text-gray-400">ID: {{ row.operator_id }}</div>
-          </div>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作类型" prop="action" width="180" />
-      <el-table-column label="资源类型" prop="resource_type" width="120" />
-      <el-table-column label="资源ID" prop="resource_id" width="120" />
-      <el-table-column label="操作结果" prop="result_status" width="100">
-        <template #default="{ row }">
-          <el-tag :type="row.result_status === 1 ? 'success' : 'danger'">
-            {{ row.result_status === 1 ? '成功' : '失败' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作IP" prop="request_ip" width="140" />
-      <el-table-column label="操作时间" prop="created_at" width="180" :formatter="dateFormatter" />
-      <el-table-column label="操作" fixed="right" width="120">
-        <template #default="{ row }">
-          <el-button
-            link
-            type="primary"
-            @click="openDetail(row)"
-            v-hasPermi="['audit:read']"
-          >
-            详情
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <!-- 分页 -->
-    <Pagination
-      :total="total"
-      v-model:page="queryParams.page"
-      v-model:limit="queryParams.page_size"
-      @pagination="getList"
-    />
-  </ContentWrap>
-
-  <!-- 详情弹窗 -->
-  <Detail ref="detailRef" />
-</template>
-
-<script setup lang="ts">
-import { dateFormatter } from '@/utils/formatTime'
+<script setup lang="tsx">
+import { reactive, ref, unref } from 'vue'
+import { Table, type TableColumn } from '@/components/Table'
+import { ContentWrap } from '@/components/ContentWrap'
+import { Search } from '@/components/Search'
+import type { FormSchema } from '@/components/Form'
+import { useTable } from '@/hooks/web/useTable'
 import { getAuditLogListApi, type AuditLogItem, type AuditLogListParams } from '@/api/audit'
+import { ElButton, ElTag } from 'element-plus'
 import Detail from './components/Detail.vue'
+import { formatTime } from '@/utils'
 
 defineOptions({ name: 'AuthorizationAudit' })
 
-const { t } = useI18n() // 国际化
+const detailRef = ref<ComponentRef<typeof Detail>>()
+const searchParams = ref<Partial<AuditLogListParams>>({})
 
-const loading = ref(true) // 列表的加载中
-const list = ref<AuditLogItem[]>([]) // 列表的数据
-const total = ref(0) // 列表的总页数
-const queryParams = reactive<AuditLogListParams>({
-  page: 1,
-  page_size: 20
-})
-const dateRange = ref<[string, string]>()
-
-const queryFormRef = ref() // 搜索的表单
-const detailRef = ref() // 详情 Ref
-
-/** 查询列表 */
-const getList = async () => {
-  loading.value = true
-  try {
-    // 处理日期范围
-    if (dateRange.value && dateRange.value.length === 2) {
-      queryParams.start_time = dateRange.value[0]
-      queryParams.end_time = dateRange.value[1]
-    } else {
-      queryParams.start_time = undefined
-      queryParams.end_time = undefined
+const { tableRegister, tableState, tableMethods } = useTable({
+  fetchDataApi: async () => {
+    const { currentPage, pageSize } = tableState
+    const params: AuditLogListParams = {
+      page: unref(currentPage),
+      page_size: unref(pageSize),
+      ...unref(searchParams)
     }
-
-    const data = await getAuditLogListApi({ params: queryParams })
-    list.value = data.list
-    total.value = data.total
-  } finally {
-    loading.value = false
+    const response = await getAuditLogListApi({ params }).catch(() => undefined)
+    const data = response?.data ?? { list: [], total: 0 }
+    return {
+      list: Array.isArray(data.list) ? data.list : [],
+      total: Number.isFinite(data.total) ? data.total : 0
+    }
   }
-}
-
-/** 搜索按钮操作 */
-const handleQuery = () => {
-  queryParams.page = 1
-  getList()
-}
-
-/** 重置按钮操作 */
-const resetQuery = () => {
-  dateRange.value = undefined
-  queryFormRef.value.resetFields()
-  handleQuery()
-}
-
-/** 打开详情弹窗 */
-const openDetail = (row: AuditLogItem) => {
-  detailRef.value.open(row)
-}
-
-/** 初始化 **/
-onMounted(() => {
-  getList()
 })
+
+const { dataList, loading, total, currentPage } = tableState
+const { getList } = tableMethods
+
+const normalizeSearchParams = (params: Record<string, any>) => {
+  const next = { ...(params || {}) }
+  const range: [string, string] | undefined = next.dateRange
+  if (range && range.length === 2) {
+    next.start_time = range[0]
+    next.end_time = range[1]
+  } else {
+    next.start_time = undefined
+    next.end_time = undefined
+  }
+  delete next.dateRange
+  return next
+}
+
+const setSearchParams = (params: Record<string, any>) => {
+  searchParams.value = normalizeSearchParams(params)
+  currentPage.value = 1
+  getList()
+}
+
+const tableColumns = reactive<TableColumn[]>([
+  {
+    field: 'id',
+    label: 'ID',
+    width: 80
+  },
+  {
+    field: 'operator_name',
+    label: '操作者',
+    minWidth: 160,
+    slots: {
+      default: ({ row }) => {
+        if (!row) return null
+        return (
+          <div>
+            <div>{row.operator_name || '-'}</div>
+            {row.operator_id ? (
+              <div class="text-xs text-gray-400">ID: {row.operator_id}</div>
+            ) : null}
+          </div>
+        )
+      }
+    }
+  },
+  {
+    field: 'action',
+    label: '操作类型',
+    minWidth: 180
+  },
+  {
+    field: 'resource_type',
+    label: '资源类型',
+    minWidth: 140
+  },
+  {
+    field: 'resource_id',
+    label: '资源ID',
+    minWidth: 160
+  },
+  {
+    field: 'result_status',
+    label: '操作结果',
+    width: 140,
+    slots: {
+      default: ({ row }) => {
+        if (!row) return null
+        return (
+          <ElTag type={row.result_status === 1 ? 'success' : 'danger'}>
+            {row.result_status === 1 ? '成功' : '失败'}
+          </ElTag>
+        )
+      }
+    }
+  },
+  {
+    field: 'request_ip',
+    label: '操作IP',
+    minWidth: 160
+  },
+  {
+    field: 'created_at',
+    label: '操作时间',
+    minWidth: 200,
+    formatter: (_row, _column, cellValue) =>
+      cellValue ? formatTime(cellValue, 'yyyy-MM-dd HH:mm:ss') : '-'
+  },
+  {
+    field: 'actionSlot',
+    label: '操作',
+    width: 140,
+    fixed: 'right',
+    slots: {
+      default: ({ row }) => {
+        if (!row) return null
+        return (
+          <ElButton link type="primary" onClick={() => openDetail(row)}>
+            详情
+          </ElButton>
+        )
+      }
+    }
+  }
+])
+
+const searchSchema = reactive<FormSchema[]>([
+  {
+    field: 'operator_id',
+    label: '操作者ID',
+    component: 'Input'
+  },
+  {
+    field: 'operator_name',
+    label: '操作者名称',
+    component: 'Input'
+  },
+  {
+    field: 'action',
+    label: '操作类型',
+    component: 'Input'
+  },
+  {
+    field: 'resource_type',
+    label: '资源类型',
+    component: 'Input'
+  },
+  {
+    field: 'result_status',
+    label: '操作结果',
+    component: 'Select',
+    componentProps: {
+      options: [
+        { label: '成功', value: 1 },
+        { label: '失败', value: 0 }
+      ],
+      clearable: true,
+      style: { width: '100%' }
+    }
+  },
+  {
+    field: 'dateRange',
+    label: '操作时间',
+    component: 'DatePicker',
+    componentProps: {
+      type: 'datetimerange',
+      valueFormat: 'YYYY-MM-DD HH:mm:ss',
+      startPlaceholder: '开始时间',
+      endPlaceholder: '结束时间',
+      defaultTime: [new Date('2000-01-01 00:00:00'), new Date('2000-01-01 23:59:59')]
+    }
+  }
+])
+
+const openDetail = (row: AuditLogItem) => {
+  detailRef.value?.open(row)
+}
 </script>
 
+<template>
+  <ContentWrap>
+    <Search :schema="searchSchema" @search="setSearchParams" @reset="setSearchParams" />
+    <Table
+      :columns="tableColumns"
+      :data="dataList"
+      :loading="loading"
+      :pagination="{ total }"
+      @register="tableRegister"
+    />
+  </ContentWrap>
+
+  <Detail ref="detailRef" />
+</template>

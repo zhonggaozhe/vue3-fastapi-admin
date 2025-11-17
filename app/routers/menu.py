@@ -11,7 +11,6 @@ from app.repositories.user_repository import UserRepository
 from app.schemas.menu import MenuCreate, MenuDeletePayload, MenuEditPayload, MenuUpdate
 
 router = APIRouter()
-legacy_router = APIRouter(prefix="/menu")
 
 async def _menu_list_payload(db: AsyncSession) -> dict:
     menu_repo = MenuRepository(db)
@@ -22,14 +21,6 @@ async def _menu_list_payload(db: AsyncSession) -> dict:
 @router.get("/list")
 @permission_required("menu", "list")
 async def list_menus_alias(
-    db: AsyncSession = Depends(get_db),
-) -> dict:
-    return await _menu_list_payload(db)
-
-
-@legacy_router.get("/list")
-@permission_required("menu", "list")
-async def legacy_menu_list(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     return await _menu_list_payload(db)

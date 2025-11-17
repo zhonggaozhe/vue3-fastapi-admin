@@ -40,7 +40,9 @@ export interface AuditLogListResponse {
 }
 
 // 获取审计日志列表
-export const getAuditLogListApi = ({ params }: AxiosConfig<AuditLogListParams>): Promise<IResponse<AuditLogListResponse>> => {
+export const getAuditLogListApi = ({
+  params
+}: AxiosConfig<AuditLogListParams>): Promise<IResponse<AuditLogListResponse>> => {
   return request.get({ url: '/audit/list', params })
 }
 
@@ -48,4 +50,3 @@ export const getAuditLogListApi = ({ params }: AxiosConfig<AuditLogListParams>):
 export const getAuditLogDetailApi = (id: number): Promise<IResponse<AuditLogItem>> => {
   return request.get({ url: `/audit/${id}` })
 }
-

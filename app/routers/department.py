@@ -8,7 +8,6 @@ from app.repositories.department_repository import DepartmentRepository
 from app.repositories.user_repository import UserRepository
 
 router = APIRouter()
-legacy_router = APIRouter(prefix="/department")
 
 def _format_datetime(value) -> str | None:
     if not value:
@@ -30,14 +29,6 @@ async def list_departments(
     return await _department_tree_payload(db)
 
 
-@legacy_router.get("/list")
-@permission_required("department", "list")
-async def legacy_list_departments(
-    db: AsyncSession = Depends(get_db),
-) -> dict:
-    return await _department_tree_payload(db)
-
-
 async def _department_table_payload(
     page_index: int, page_size: int, db: AsyncSession
 ) -> dict:
@@ -49,16 +40,6 @@ async def _department_table_payload(
 @router.get("/table/list")
 @permission_required("department", "list")
 async def department_table_list(
-    pageIndex: int = Query(1, ge=1),
-    pageSize: int = Query(10, ge=1, le=100),
-    db: AsyncSession = Depends(get_db),
-) -> dict:
-    return await _department_table_payload(pageIndex, pageSize, db)
-
-
-@legacy_router.get("/table/list")
-@permission_required("department", "list")
-async def legacy_department_table_list(
     pageIndex: int = Query(1, ge=1),
     pageSize: int = Query(10, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
@@ -104,13 +85,3 @@ async def department_users(
 ) -> dict:
     return await _department_users_payload(id, pageIndex, pageSize, db)
 
-
-@legacy_router.get("/users")
-@permission_required("department", "users")
-async def legacy_department_users(
-    id: str | None = Query(default=None, description="Department ID"),
-    pageIndex: int = Query(1, ge=1),
-    pageSize: int = Query(10, ge=1, le=100),
-    db: AsyncSession = Depends(get_db),
-) -> dict:
-    return await _department_users_payload(id, pageIndex, pageSize, db)

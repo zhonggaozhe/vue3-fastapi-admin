@@ -3,12 +3,18 @@
     <el-descriptions :column="2" border v-if="formData">
       <el-descriptions-item label="ID">{{ formData.id }}</el-descriptions-item>
       <el-descriptions-item label="链路ID">{{ formData.trace_id }}</el-descriptions-item>
-      <el-descriptions-item label="操作者ID">{{ formData.operator_id || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="操作者名称">{{ formData.operator_name || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="操作者ID">
+        {{ formData.operator_id || '-' }}
+      </el-descriptions-item>
+      <el-descriptions-item label="操作者名称">
+        {{ formData.operator_name || '-' }}
+      </el-descriptions-item>
       <el-descriptions-item label="操作类型" :span="2">
         <el-tag>{{ formData.action }}</el-tag>
       </el-descriptions-item>
-      <el-descriptions-item label="资源类型">{{ formData.resource_type || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="资源类型">
+        {{ formData.resource_type || '-' }}
+      </el-descriptions-item>
       <el-descriptions-item label="资源ID">{{ formData.resource_id || '-' }}</el-descriptions-item>
       <el-descriptions-item label="操作结果" :span="2">
         <el-tag :type="formData.result_status === 1 ? 'success' : 'danger'">
@@ -40,6 +46,9 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+import { ElButton, ElDescriptions, ElDescriptionsItem, ElTag } from 'element-plus'
+import { Dialog } from '@/components/Dialog'
 import type { AuditLogItem } from '@/api/audit'
 
 defineOptions({ name: 'AuditDetail' })
@@ -69,4 +78,3 @@ defineExpose({ open })
   word-break: break-all;
 }
 </style>
-

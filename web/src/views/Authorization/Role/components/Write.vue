@@ -111,7 +111,6 @@ const nodeClick = (treeData: any) => {
   currentTreeData.value = treeData
 }
 
-
 const rules = reactive({
   roleName: [required()],
   role: [required()],
@@ -182,15 +181,10 @@ const submit = async () => {
     const formData = await getFormData()
     const tree = unref(treeRef)
     const checkedKeys = tree
-      ? [
-          ...(tree.getCheckedKeys?.() || []),
-          ...(tree.getHalfCheckedKeys?.() || [])
-        ]
+      ? [...(tree.getCheckedKeys?.() || []), ...(tree.getHalfCheckedKeys?.() || [])]
       : []
     const normalizedKeys = checkedKeys.map((id: string | number) => Number(id))
-    const selectedMenus = normalizedKeys
-      .map((id) => nodeMap.value.get(id))
-      .filter(Boolean)
+    const selectedMenus = normalizedKeys.map((id) => nodeMap.value.get(id)).filter(Boolean)
     formData.menu = selectedMenus || []
     return formData
   }

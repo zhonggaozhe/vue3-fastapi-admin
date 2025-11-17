@@ -9,7 +9,10 @@ export const loginApi = (data: UserLoginType): Promise<IResponse<LoginResult>> =
   return request.post({ url: '/auth/login', data })
 }
 
-export const refreshTokenApi = (refreshToken: string, deviceId?: string): Promise<IResponse<LoginResult>> => {
+export const refreshTokenApi = (
+  refreshToken: string,
+  deviceId?: string
+): Promise<IResponse<LoginResult>> => {
   return request.post({
     url: '/auth/refresh',
     data: {
