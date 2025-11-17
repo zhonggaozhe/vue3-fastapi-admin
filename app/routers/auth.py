@@ -9,6 +9,7 @@ from app.agents.ratelimit import RateLimitAgent
 from app.agents.rbac import RBACAgent
 from app.agents.session import SessionAgent
 from app.agents.token import TokenAgent
+from app.core.audit_actions import AuditAction
 from app.core.database import get_db
 from app.core.redis import get_redis
 from app.core.responses import success_response
@@ -43,7 +44,7 @@ async def login(
         result = await orchestrator.login(db, redis, payload, request=request)
     except HTTPException as exc:
         await orchestrator.audit_agent.log_event(
-            action="AUTH_LOGIN_FAILED",
+            action=AuditAction.AUTH_LOGIN_FAILED,
             resource_type="SESSION",
             operator_name=payload.username,
             params={"username": payload.username, "device_id": payload.device_id},

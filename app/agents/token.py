@@ -28,6 +28,7 @@ class TokenAgent:
             sub=str(user.id),
             expires_minutes=settings.access_token_ttl_minutes,
             token_type="access",
+            username=user.username,
             role=primary_role.code if primary_role else "",
             role_id=str(primary_role.id) if primary_role else "",
             permissions=user.permissions,

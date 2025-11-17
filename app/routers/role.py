@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.audit import AuditAgent, get_audit_agent
 from app.agents.identity import AuthenticatedUser
+from app.core.audit_actions import AuditAction
 from app.core.auth import get_current_user, permission_required
 from app.core.database import get_db
 from app.core.responses import success_response
@@ -101,7 +102,7 @@ async def create_role(
             status_code=status.HTTP_400_BAD_REQUEST, detail="ROLE_CODE_OR_NAME_EXISTS"
         ) from None
     await audit_agent.log_event(
-        action="ROLE_PERMISSION_CREATE",
+        action=AuditAction.ROLE_PERMISSION_CREATE,
         resource_type="ROLE",
         resource_id=str(role.id),
         operator_id=current_user.id,
@@ -148,7 +149,7 @@ async def edit_role(
             status_code=status.HTTP_400_BAD_REQUEST, detail="ROLE_CODE_OR_NAME_EXISTS"
         ) from None
     await audit_agent.log_event(
-        action="ROLE_PERMISSION_UPDATE",
+        action=AuditAction.ROLE_PERMISSION_UPDATE,
         resource_type="ROLE",
         resource_id=str(role.id),
         operator_id=current_user.id,
@@ -200,7 +201,7 @@ async def update_role(
             status_code=status.HTTP_400_BAD_REQUEST, detail="ROLE_CODE_OR_NAME_EXISTS"
         ) from None
     await audit_agent.log_event(
-        action="ROLE_PERMISSION_UPDATE",
+        action=AuditAction.ROLE_PERMISSION_UPDATE,
         resource_type="ROLE",
         resource_id=str(role.id),
         operator_id=current_user.id,
@@ -245,7 +246,7 @@ async def delete_roles(
         else:
             deleted += 1
             await audit_agent.log_event(
-                action="ROLE_PERMISSION_DELETE",
+                action=AuditAction.ROLE_PERMISSION_DELETE,
                 resource_type="ROLE",
                 resource_id=str(role.id),
                 operator_id=current_user.id,
@@ -288,7 +289,7 @@ async def delete_role(
             ) from exc
         raise
     await audit_agent.log_event(
-        action="ROLE_PERMISSION_DELETE",
+        action=AuditAction.ROLE_PERMISSION_DELETE,
         resource_type="ROLE",
         resource_id=str(role.id),
         operator_id=current_user.id,

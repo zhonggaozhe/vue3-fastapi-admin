@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.agents.audit import get_audit_agent
+from app.core.audit_actions import AuditAction
 from app.core.settings import get_settings
 from app.core.trace import get_trace_id
 from app.middleware.auth import AuthMiddleware
@@ -49,7 +50,7 @@ def create_app() -> FastAPI:
             operator_id = getattr(request.state, "user_id", None)
             operator_name = getattr(request.state, "username", None)
             await audit_agent.log_event(
-                action="HTTP_EXCEPTION",
+                action=AuditAction.HTTP_EXCEPTION,
                 resource_type="SYSTEM",
                 resource_id=None,
                 operator_id=operator_id,
@@ -86,7 +87,7 @@ def create_app() -> FastAPI:
         operator_name = getattr(request.state, "username", None)
         error_trace = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
         await audit_agent.log_event(
-            action="UNHANDLED_EXCEPTION",
+            action=AuditAction.UNHANDLED_EXCEPTION,
             resource_type="SYSTEM",
             resource_id=None,
             operator_id=operator_id,

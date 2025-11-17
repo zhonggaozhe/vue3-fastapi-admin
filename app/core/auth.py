@@ -10,10 +10,12 @@ from app.agents.identity import AuthenticatedUser, IdentityAgent
 from app.agents.rbac import RBACAgent
 from app.core.database import get_db
 from app.core.errors import raise_error
+from app.core.logging import get_logger
 from app.core.security import decode_jwt_token
 
 identity_agent = IdentityAgent()
 rbac_agent = RBACAgent()
+logger = get_logger(__name__)
 
 
 async def get_current_user(
@@ -24,8 +26,10 @@ async def get_current_user(
         raise_error("AUTH.INVALID_CREDENTIAL", detail="Missing or invalid Authorization header")
     token = authorization.split(" ", 1)[1]
     try:
+        logger.info("Decoding JWT token: %s", token)
         payload = decode_jwt_token(token)
-    except ValueError:
+    except ValueError as exc:
+        logger.error("Invalid token: %s", exc)
         raise_error("AUTH.INVALID_CREDENTIAL", detail="Invalid token")
     if payload.get("type") != "access":
         raise_error("AUTH.INVALID_CREDENTIAL", detail="Access token required")

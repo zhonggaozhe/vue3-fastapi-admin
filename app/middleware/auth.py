@@ -20,10 +20,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     user_id = payload.get("sub")
                     if user_id:
                         request.state.user_id = int(user_id)
+                    username = payload.get("username")
+                    if username:
+                        request.state.username = username
             except (ValueError, KeyError, TypeError):
                 # Token无效，忽略
                 pass
 
         response = await call_next(request)
         return response
-

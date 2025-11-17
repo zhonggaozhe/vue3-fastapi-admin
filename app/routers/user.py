@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.audit import AuditAgent, get_audit_agent
 from app.agents.identity import AuthenticatedUser
+from app.core.audit_actions import AuditAction
 from app.core.auth import (
     ensure_permission,
     get_current_user,
@@ -124,7 +125,7 @@ async def delete_user(
     deleted = await repo.delete_users(payload.ids)
     if deleted:
         await audit_agent.log_event(
-            action="USER_DELETE",
+            action=AuditAction.USER_DELETE,
             resource_type="USER",
             resource_id=",".join(str(_id) for _id in payload.ids),
             operator_id=current_user.id,
@@ -153,7 +154,7 @@ async def _create_user(
         ) from None
     snapshot = _user_snapshot(user)
     await audit_agent.log_event(
-        action="ADMIN_CREATE_USER",
+        action=AuditAction.ADMIN_CREATE_USER,
         resource_type="USER",
         resource_id=str(user.id),
         operator_id=operator.id,
@@ -185,7 +186,7 @@ async def _update_user(
         ) from None
     after_snapshot = _user_snapshot(updated)
     await audit_agent.log_event(
-        action="USER_PROFILE_UPDATE",
+        action=AuditAction.USER_PROFILE_UPDATE,
         resource_type="USER",
         resource_id=str(updated.id),
         operator_id=operator.id,
@@ -197,7 +198,7 @@ async def _update_user(
     )
     if payload.password:
         await audit_agent.log_event(
-            action="USER_PASSWORD_UPDATE",
+            action=AuditAction.USER_PASSWORD_UPDATE,
             resource_type="USER",
             resource_id=str(updated.id),
             operator_id=operator.id,

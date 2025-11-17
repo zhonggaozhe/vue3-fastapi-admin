@@ -10,6 +10,7 @@ from app.agents.ratelimit import RateLimitAgent
 from app.agents.rbac import RBACAgent
 from app.agents.session import SessionAgent
 from app.agents.token import TokenAgent
+from app.core.audit_actions import AuditAction
 from app.core.errors import raise_error
 from app.core.security import decode_jwt_token
 from app.repositories.menu_repository import MenuRepository
@@ -47,7 +48,7 @@ class AuthOrchestrator:
             "expires_at": session_info["expires_at"].isoformat(),
         }
         await self.audit_agent.log_event(
-            action="AUTH_LOGIN",
+            action=AuditAction.AUTH_LOGIN,
             resource_type="SESSION",
             resource_id=session_info["sid"],
             operator_id=user.id,
@@ -124,7 +125,7 @@ class AuthOrchestrator:
             "expires_at": session_info["expires_at"].isoformat(),
         }
         await self.audit_agent.log_event(
-            action="AUTH_REFRESH",
+            action=AuditAction.AUTH_REFRESH,
             resource_type="SESSION",
             resource_id=session_info["sid"],
             operator_id=user.id,
@@ -152,12 +153,16 @@ class AuthOrchestrator:
         token_sub: str | None,
         request: Request | None = None,
     ) -> dict:
-        operator_id = int(token_sub) if token_sub else None
+        operator_id = getattr(request.state, "user_id", None) if request else None
+        operator_name = getattr(request.state, "username", None) if request else None
+        if operator_id is None and token_sub:
+            operator_id = int(token_sub)
         await self.audit_agent.log_event(
-            action="AUTH_LOGOUT",
+            action=AuditAction.AUTH_LOGOUT,
             resource_type="SESSION",
             resource_id=token_sub,
             operator_id=operator_id,
+            operator_name=operator_name,
             request=request,
         )
         return {"ok": True}
