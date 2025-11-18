@@ -10,7 +10,6 @@
 -- ============================================================================
 TRUNCATE TABLE audit_log RESTART IDENTITY CASCADE;
 TRUNCATE TABLE role_menus RESTART IDENTITY CASCADE;
-TRUNCATE TABLE menu_actions RESTART IDENTITY CASCADE;
 TRUNCATE TABLE role_permissions RESTART IDENTITY CASCADE;
 TRUNCATE TABLE user_roles RESTART IDENTITY CASCADE;
 TRUNCATE TABLE menus RESTART IDENTITY CASCADE;
@@ -86,20 +85,6 @@ ON CONFLICT (id) DO UPDATE SET
     department_id = EXCLUDED.department_id;
 
 -- ============================================================================
--- 插入权限数据
--- ============================================================================
-INSERT INTO permissions (id, namespace, resource, action, label, effect)
-VALUES
-    (1, '*', '*', '*', 'All Access', 'allow'),
-    (2, 'example', 'dialog', 'create', '示例弹窗-新增', 'allow'),
-    (3, 'example', 'dialog', 'delete', '示例弹窗-删除', 'allow'),
-    (4, 'system', 'audit', 'list', '审计日志-列表', 'allow'),
-    (5, 'system', 'audit', 'read', '审计日志-查看', 'allow')
-ON CONFLICT (namespace, resource, action) DO UPDATE SET
-    label = EXCLUDED.label,
-    effect = EXCLUDED.effect;
-
--- ============================================================================
 -- 插入菜单数据
 -- ============================================================================
 INSERT INTO menus (
@@ -141,56 +126,45 @@ VALUES
     (22, 18, 'SystemAudit', '审计日志', 'router.audit', 'audit', 'views/Authorization/Audit/Audit', NULL, 4, NULL, 'route', FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, NULL, TRUE, FALSE, FALSE);
 
 -- ============================================================================
--- 插入菜单操作数据（按钮权限）
+-- 插入权限数据（依赖菜单 ID）
 -- ============================================================================
-INSERT INTO menu_actions (id, menu_id, code, label)
+INSERT INTO permissions (id, namespace, resource, action, label, effect, menu_id)
 VALUES
-    -- 分析页按钮权限
-    (1, 2, 'add', '新增'),
-    (2, 2, 'edit', '编辑'),
-    
-    -- 工作台按钮权限
-    (3, 3, 'add', '新增'),
-    (4, 3, 'edit', '编辑'),
-    (5, 3, 'delete', '删除'),
-    
-    -- 综合示例-弹窗按钮权限
-    (6, 13, 'add', '新增'),
-    (7, 13, 'edit', '编辑'),
-    (8, 13, 'delete', '删除'),
-    (9, 13, 'view', '查看'),
-    
-    -- 综合示例-页面按钮权限
-    (10, 14, 'add', '新增'),
-    (11, 14, 'edit', '编辑'),
-    (12, 14, 'delete', '删除'),
-    (13, 14, 'view', '查看'),
-    
-    -- 用户管理按钮权限
-    (14, 19, 'add', '新增'),
-    (15, 19, 'edit', '编辑'),
-    (16, 19, 'delete', '删除'),
-    (17, 19, 'view', '查看'),
-    
-    -- 菜单管理按钮权限
-    (18, 20, 'add', '新增'),
-    (19, 20, 'edit', '编辑'),
-    (20, 20, 'delete', '删除'),
-    (21, 20, 'view', '查看'),
-    
-    -- 角色管理按钮权限
-    (22, 21, 'add', '新增'),
-    (23, 21, 'edit', '编辑'),
-    (24, 21, 'delete', '删除'),
-    (25, 21, 'view', '查看'),
-    
-    -- 审计日志按钮权限
-    (26, 22, 'list', '列表'),
-    (27, 22, 'read', '查看')
-ON CONFLICT (id) DO UPDATE SET
-    menu_id = EXCLUDED.menu_id,
-    code = EXCLUDED.code,
-    label = EXCLUDED.label;
+    (1, '*', '*', '*', 'All Access', 'allow', NULL),
+    (2, 'example', 'dialog', 'create', '示例弹窗-新增', 'allow', 13),
+    (3, 'example', 'dialog', 'delete', '示例弹窗-删除', 'allow', 13),
+    (4, 'example', 'dialog', 'edit', '示例弹窗-编辑', 'allow', 13),
+    (5, 'example', 'dialog', 'view', '示例弹窗-查看', 'allow', 13),
+    (6, 'example', 'page', 'add', '综合示例-页面新增', 'allow', 14),
+    (7, 'example', 'page', 'edit', '综合示例-页面编辑', 'allow', 14),
+    (8, 'example', 'page', 'delete', '综合示例-页面删除', 'allow', 14),
+    (9, 'example', 'page', 'view', '综合示例-页面查看', 'allow', 14),
+    (10, 'dashboard', 'analysis', 'add', '分析页-新增', 'allow', 2),
+    (11, 'dashboard', 'analysis', 'edit', '分析页-编辑', 'allow', 2),
+    (12, 'dashboard', 'workplace', 'add', '工作台-新增', 'allow', 3),
+    (13, 'dashboard', 'workplace', 'edit', '工作台-编辑', 'allow', 3),
+    (14, 'dashboard', 'workplace', 'delete', '工作台-删除', 'allow', 3),
+    (15, 'system', 'audit', 'list', '审计日志-列表', 'allow', 22),
+    (16, 'system', 'audit', 'read', '审计日志-查看', 'allow', 22),
+    (17, 'system', 'menu', 'list', '菜单-查询', 'allow', 20),
+    (18, 'system', 'menu', 'create', '菜单-新增', 'allow', 20),
+    (19, 'system', 'menu', 'update', '菜单-编辑', 'allow', 20),
+    (20, 'system', 'menu', 'delete', '菜单-删除', 'allow', 20),
+    (21, 'system', 'role', 'list', '角色-查询', 'allow', 21),
+    (22, 'system', 'role', 'create', '角色-新增', 'allow', 21),
+    (23, 'system', 'role', 'update', '角色-编辑', 'allow', 21),
+    (24, 'system', 'role', 'delete', '角色-删除', 'allow', 21),
+    (25, 'system', 'user', 'list', '用户-查询', 'allow', 19),
+    (26, 'system', 'user', 'create', '用户-新增', 'allow', 19),
+    (27, 'system', 'user', 'update', '用户-编辑', 'allow', 19),
+    (28, 'system', 'user', 'delete', '用户-删除', 'allow', 19),
+    (29, 'system', 'department', 'list', '部门-列表', 'allow', NULL),
+    (30, 'system', 'department', 'users', '部门-成员', 'allow', NULL)
+ON CONFLICT (namespace, resource, action) DO UPDATE SET
+    label = EXCLUDED.label,
+    effect = EXCLUDED.effect,
+    menu_id = EXCLUDED.menu_id;
+
 
 -- ============================================================================
 -- 插入关联关系数据
@@ -207,8 +181,19 @@ ON CONFLICT (user_id, role_id) DO NOTHING;
 INSERT INTO role_permissions (role_id, permission_id)
 VALUES
     (1, 1),  -- admin 角色 -> 所有权限 (*.*.*)
-    (2, 2),  -- test 角色 -> 示例弹窗-新增
-    (2, 3)   -- test 角色 -> 示例弹窗-删除
+    (2, 2),   -- example:dialog:create
+    (2, 3),   -- example:dialog:delete
+    (2, 4),   -- example:dialog:edit
+    (2, 5),   -- example:dialog:view
+    (2, 6),   -- example:page:add
+    (2, 7),   -- example:page:edit
+    (2, 8),   -- example:page:delete
+    (2, 9),   -- example:page:view
+    (2, 17),  -- system:menu:list
+    (2, 21),  -- system:role:list
+    (2, 25),  -- system:user:list
+    (2, 29),  -- system:department:list
+    (2, 30)   -- system:department:users
 ON CONFLICT (role_id, permission_id) DO NOTHING;
 
 -- 角色菜单关联
@@ -226,14 +211,15 @@ ON CONFLICT (role_id, menu_id) DO NOTHING;
 
 -- ============================================================================
 -- 重置序列（确保自增ID从正确的位置开始）
--- 注意：关联表（user_roles, role_permissions, role_menus）没有序列，因为它们使用复合主键
 -- ============================================================================
 SELECT setval(pg_get_serial_sequence('departments', 'id'), COALESCE((SELECT MAX(id) FROM departments), 0) + 1, false);
 SELECT setval(pg_get_serial_sequence('roles', 'id'), COALESCE((SELECT MAX(id) FROM roles), 0) + 1, false);
 SELECT setval(pg_get_serial_sequence('users', 'id'), COALESCE((SELECT MAX(id) FROM users), 0) + 1, false);
 SELECT setval(pg_get_serial_sequence('permissions', 'id'), COALESCE((SELECT MAX(id) FROM permissions), 0) + 1, false);
 SELECT setval(pg_get_serial_sequence('menus', 'id'), COALESCE((SELECT MAX(id) FROM menus), 0) + 1, false);
-SELECT setval(pg_get_serial_sequence('menu_actions', 'id'), COALESCE((SELECT MAX(id) FROM menu_actions), 0) + 1, false);
+SELECT setval(pg_get_serial_sequence('user_roles', 'id'), COALESCE((SELECT MAX(id) FROM user_roles), 0) + 1, false);
+SELECT setval(pg_get_serial_sequence('role_permissions', 'id'), COALESCE((SELECT MAX(id) FROM role_permissions), 0) + 1, false);
+SELECT setval(pg_get_serial_sequence('role_menus', 'id'), COALESCE((SELECT MAX(id) FROM role_menus), 0) + 1, false);
 SELECT setval(pg_get_serial_sequence('audit_log', 'id'), COALESCE((SELECT MAX(id) FROM audit_log), 0) + 1, false);
 
 -- ============================================================================

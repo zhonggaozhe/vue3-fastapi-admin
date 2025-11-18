@@ -54,7 +54,7 @@ const detailSchema = ref<DescriptionsSchema[]>([
     label: '图标',
     slots: {
       default: (data) => {
-        const icon = data.icon
+        const icon = data.meta?.icon
         if (icon) {
           return (
             <>
@@ -85,7 +85,7 @@ const detailSchema = ref<DescriptionsSchema[]>([
           {data?.permissionList?.map((v) => {
             return (
               <ElTag class="mr-1" key={v.value}>
-                {v.label}
+                {v.label} ({v.value})
               </ElTag>
             )
           })}
@@ -94,11 +94,11 @@ const detailSchema = ref<DescriptionsSchema[]>([
     }
   },
   {
-    field: 'menuState',
+    field: 'status',
     label: '菜单状态',
     slots: {
       default: (data) => {
-        return renderTag(data.menuState)
+        return renderTag(data.status === 1)
       }
     }
   },
@@ -107,7 +107,7 @@ const detailSchema = ref<DescriptionsSchema[]>([
     label: '是否隐藏',
     slots: {
       default: (data) => {
-        return renderTag(data.enableHidden)
+        return renderTag(!!data.meta?.hidden)
       }
     }
   },
@@ -116,7 +116,7 @@ const detailSchema = ref<DescriptionsSchema[]>([
     label: '是否一直显示',
     slots: {
       default: (data) => {
-        return renderTag(data.enableDisplay)
+        return renderTag(!!data.meta?.alwaysShow)
       }
     }
   },
@@ -125,7 +125,7 @@ const detailSchema = ref<DescriptionsSchema[]>([
     label: '是否清除缓存',
     slots: {
       default: (data) => {
-        return renderTag(data.enableCleanCache)
+        return renderTag(!!data.meta?.noCache)
       }
     }
   },
@@ -134,7 +134,7 @@ const detailSchema = ref<DescriptionsSchema[]>([
     label: '是否显示面包屑',
     slots: {
       default: (data) => {
-        return renderTag(data.enableShowCrumb)
+        return renderTag(!!data.meta?.breadcrumb)
       }
     }
   },
@@ -143,7 +143,7 @@ const detailSchema = ref<DescriptionsSchema[]>([
     label: '是否固定标签页',
     slots: {
       default: (data) => {
-        return renderTag(data.enablePinnedTab)
+        return renderTag(!!data.meta?.affix)
       }
     }
   },
@@ -152,7 +152,7 @@ const detailSchema = ref<DescriptionsSchema[]>([
     label: '是否隐藏标签页',
     slots: {
       default: (data) => {
-        return renderTag(data.enableHiddenTab)
+        return renderTag(!!data.meta?.noTagsView)
       }
     }
   },
@@ -161,7 +161,7 @@ const detailSchema = ref<DescriptionsSchema[]>([
     label: '是否可跳转',
     slots: {
       default: (data) => {
-        return renderTag(data.enableSkip)
+        return renderTag(!!data.meta?.canTo)
       }
     }
   }

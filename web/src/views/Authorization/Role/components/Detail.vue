@@ -12,11 +12,14 @@ defineProps({
   }
 })
 
-const filterPermissionName = (value: string) => {
-  const index = findIndex(unref(currentTreeData)?.permissionList || [], (item) => {
-    return item.value === value
+const filterPermissionName = (id: number) => {
+  const list = unref(currentTreeData)?.permissionList || []
+  const index = findIndex(list, (item) => {
+    return Number(item.id) === Number(id)
   })
-  return (unref(currentTreeData)?.permissionList || [])[index].label ?? ''
+  const item = list[index]
+  if (!item) return ''
+  return `${item.label} (${item.value})`
 }
 
 const renderTag = (enable?: boolean) => {
@@ -87,8 +90,12 @@ const detailSchema = ref<DescriptionsSchema[]>([
               </div>
               <div class="flex-1">
                 {unref(currentTreeData)
-                  ? unref(currentTreeData)?.meta?.permission?.map((v: string) => {
-                      return <ElTag class="ml-2 mt-2">{filterPermissionName(v)}</ElTag>
+                  ? unref(currentTreeData)?.meta?.permissionIds?.map((v: number) => {
+                      return (
+                        <ElTag class="ml-2 mt-2" key={v}>
+                          {filterPermissionName(v)}
+                        </ElTag>
+                      )
                     })
                   : null}
               </div>

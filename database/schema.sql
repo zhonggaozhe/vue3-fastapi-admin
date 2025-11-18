@@ -2,8 +2,8 @@
 -- PostgreSQL Database Schema for FastAPI Admin Service
 -- ============================================================================
 -- 数据库建表脚本
--- 执行顺序：
---   1. 执行 drop_all.sql 清理现有数据（可选）
+-- 推荐执行顺序：
+--   1. 如需重建，请运行 drop_all.sql（会清空所有对象）
 --   2. 执行此文件创建表结构
 --   3. 执行 seed.sql 插入测试数据
 -- ============================================================================
@@ -23,20 +23,6 @@ BEGIN
         COMMENT ON TYPE menu_type IS '菜单类型：directory-目录, route-路由, action-操作';
     END IF;
 END$$;
-
--- ============================================================================
--- 删除现有表（按依赖关系倒序，确保可以重新创建）
--- ============================================================================
-DROP TABLE IF EXISTS audit_log CASCADE;
-DROP TABLE IF EXISTS role_menus CASCADE;
-DROP TABLE IF EXISTS menu_actions CASCADE;
-DROP TABLE IF EXISTS menus CASCADE;
-DROP TABLE IF EXISTS departments CASCADE;
-DROP TABLE IF EXISTS role_permissions CASCADE;
-DROP TABLE IF EXISTS permissions CASCADE;
-DROP TABLE IF EXISTS user_roles CASCADE;
-DROP TABLE IF EXISTS roles CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
 
 -- ============================================================================
 -- 部门表
@@ -132,13 +118,15 @@ CREATE INDEX idx_roles_is_active ON roles(is_active) WHERE is_active = TRUE;
 -- 用户角色关联表
 -- ============================================================================
 CREATE TABLE user_roles (
-    user_id     BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    role_id     BIGINT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (user_id, role_id)
+    id         BIGSERIAL PRIMARY KEY,
+    user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role_id    BIGINT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, role_id)
 );
 
 COMMENT ON TABLE user_roles IS '用户角色关联表：多对多关系';
+COMMENT ON COLUMN user_roles.id IS '记录ID';
 COMMENT ON COLUMN user_roles.user_id IS '用户ID';
 COMMENT ON COLUMN user_roles.role_id IS '角色ID';
 COMMENT ON COLUMN user_roles.created_at IS '关联创建时间';
@@ -155,6 +143,7 @@ CREATE TABLE permissions (
     resource    VARCHAR(64) NOT NULL,
     action      VARCHAR(64) NOT NULL,
     label       VARCHAR(128),
+    menu_id     BIGINT,
     effect      VARCHAR(10) NOT NULL DEFAULT 'allow' CHECK (effect IN ('allow', 'deny')),
     condition   JSONB,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -168,6 +157,7 @@ COMMENT ON COLUMN permissions.namespace IS '命名空间，如：system, example
 COMMENT ON COLUMN permissions.resource IS '资源，如：user, role, menu，*表示所有';
 COMMENT ON COLUMN permissions.action IS '操作，如：create, read, update, delete, list，*表示所有';
 COMMENT ON COLUMN permissions.label IS '权限标签/描述';
+COMMENT ON COLUMN permissions.menu_id IS '所属菜单ID，NULL 表示独立权限';
 COMMENT ON COLUMN permissions.effect IS '权限效果：allow-允许, deny-拒绝';
 COMMENT ON COLUMN permissions.condition IS '权限条件，JSON格式，用于ABAC动态权限';
 COMMENT ON COLUMN permissions.created_at IS '创建时间';
@@ -180,13 +170,15 @@ CREATE INDEX idx_permissions_effect ON permissions(effect) WHERE effect = 'allow
 -- 角色权限关联表
 -- ============================================================================
 CREATE TABLE role_permissions (
+    id             BIGSERIAL PRIMARY KEY,
     role_id        BIGINT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
     permission_id  BIGINT NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
     created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (role_id, permission_id)
+    UNIQUE (role_id, permission_id)
 );
 
 COMMENT ON TABLE role_permissions IS '角色权限关联表：多对多关系';
+COMMENT ON COLUMN role_permissions.id IS '记录ID';
 COMMENT ON COLUMN role_permissions.role_id IS '角色ID';
 COMMENT ON COLUMN role_permissions.permission_id IS '权限ID';
 COMMENT ON COLUMN role_permissions.created_at IS '关联创建时间';
@@ -253,49 +245,30 @@ CREATE INDEX idx_menus_name ON menus(name);
 CREATE INDEX idx_menus_enabled ON menus(enabled) WHERE enabled = TRUE;
 CREATE INDEX idx_menus_type ON menus(type);
 
--- ============================================================================
--- 菜单操作表（按钮权限）
--- ============================================================================
-CREATE TABLE menu_actions (
-    id          BIGSERIAL PRIMARY KEY,
-    menu_id     BIGINT NOT NULL REFERENCES menus(id) ON DELETE CASCADE,
-    code        VARCHAR(64) NOT NULL,
-    label       VARCHAR(128) NOT NULL,
-    description TEXT,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (menu_id, code)
-);
-
-COMMENT ON TABLE menu_actions IS '菜单操作表：定义菜单下的按钮权限，如：新增、编辑、删除';
-COMMENT ON COLUMN menu_actions.id IS '操作ID，主键';
-COMMENT ON COLUMN menu_actions.menu_id IS '所属菜单ID';
-COMMENT ON COLUMN menu_actions.code IS '操作代码，如：add, edit, delete, view';
-COMMENT ON COLUMN menu_actions.label IS '操作标签/显示名称';
-COMMENT ON COLUMN menu_actions.description IS '操作描述';
-COMMENT ON COLUMN menu_actions.created_at IS '创建时间';
-COMMENT ON COLUMN menu_actions.updated_at IS '更新时间';
-
-CREATE INDEX idx_menu_actions_menu ON menu_actions(menu_id);
-CREATE INDEX idx_menu_actions_code ON menu_actions(code);
+ALTER TABLE permissions
+    ADD CONSTRAINT fk_permissions_menu
+    FOREIGN KEY (menu_id) REFERENCES menus(id) ON DELETE CASCADE;
 
 -- ============================================================================
 -- 角色菜单关联表
 -- ============================================================================
 CREATE TABLE role_menus (
-    role_id     BIGINT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-    menu_id     BIGINT NOT NULL REFERENCES menus(id) ON DELETE CASCADE,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (role_id, menu_id)
+    id         BIGSERIAL PRIMARY KEY,
+    role_id    BIGINT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    menu_id    BIGINT NOT NULL REFERENCES menus(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (role_id, menu_id)
 );
 
 COMMENT ON TABLE role_menus IS '角色菜单关联表：多对多关系，控制角色可访问的菜单';
+COMMENT ON COLUMN role_menus.id IS '记录ID';
 COMMENT ON COLUMN role_menus.role_id IS '角色ID';
 COMMENT ON COLUMN role_menus.menu_id IS '菜单ID';
 COMMENT ON COLUMN role_menus.created_at IS '关联创建时间';
 
 CREATE INDEX idx_role_menus_role ON role_menus(role_id);
 CREATE INDEX idx_role_menus_menu ON role_menus(menu_id);
+
 
 -- ============================================================================
 -- 审计日志表

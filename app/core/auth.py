@@ -23,9 +23,13 @@ async def get_current_user(
         raise_error("AUTH.INVALID_CREDENTIAL", detail="Missing or invalid Authorization header")
     token = authorization.split(" ", 1)[1]
     try:
-        logger.info("Decoding JWT token: %s", token)
+        # logger.info("Decoding JWT token: %s", token)
         payload = decode_jwt_token(token)
     except ValueError as exc:
+        message = str(exc).lower()
+        if "expired" in message:
+            logger.warning("Access token expired: %s", exc)
+            raise_error("AUTH.TOKEN_EXPIRED", detail="Access token expired")
         logger.error("Invalid token: %s", exc)
         raise_error("AUTH.INVALID_CREDENTIAL", detail="Invalid token")
     if payload.get("type") != "access":

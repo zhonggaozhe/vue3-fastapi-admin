@@ -40,12 +40,14 @@ class Permission(TimestampMixin, Base):
     resource: Mapped[str] = mapped_column(String(128))
     action: Mapped[str] = mapped_column(String(64))
     label: Mapped[str | None] = mapped_column(String(128))
+    menu_id: Mapped[int | None] = mapped_column(ForeignKey("menus.id", ondelete="CASCADE"), nullable=True)
     effect: Mapped[str] = mapped_column(String(16), default="allow")
     condition: Mapped[dict | None] = mapped_column(jsonb)
 
     roles: Mapped[list["Role"]] = relationship(
         "Role", secondary="role_permissions", lazy="selectin", back_populates="permissions"
     )
+    menu: Mapped["Menu | None"] = relationship("Menu", back_populates="permissions")
 
 
 class RolePermission(Base):
@@ -64,3 +66,4 @@ class RoleMenu(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id", ondelete="CASCADE"))
     menu_id: Mapped[int] = mapped_column(ForeignKey("menus.id", ondelete="CASCADE"))
+

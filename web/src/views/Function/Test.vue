@@ -4,10 +4,10 @@ import { ref, unref } from 'vue'
 import { ElDivider, ElRow, ElCol } from 'element-plus'
 import { hasPermi } from '@/components/Permission'
 
-const permission = ref('add')
+const permission = ref('system:menu:create')
 
 setTimeout(() => {
-  permission.value = 'view'
+  permission.value = 'system:menu:delete'
 }, 3000)
 </script>
 
@@ -17,13 +17,13 @@ setTimeout(() => {
     <ElRow :gutter="20">
       <ElCol :span="8">
         新增权限：
-        <Permission permission="add">
+        <Permission permission="system:menu:create">
           <BaseButton type="primary"> Add </BaseButton>
         </Permission>
       </ElCol>
       <ElCol :span="8">
         删除权限：
-        <Permission permission="delete">
+        <Permission permission="system:menu:delete">
           <BaseButton type="danger"> Delete </BaseButton>
         </Permission>
       </ElCol>
@@ -39,11 +39,11 @@ setTimeout(() => {
     <ElRow :gutter="20">
       <ElCol :span="8">
         新增权限：
-        <BaseButton v-hasPermi="'add'" type="primary"> Add </BaseButton>
+        <BaseButton v-hasPermi="'system:menu:create'" type="primary"> Add </BaseButton>
       </ElCol>
       <ElCol :span="8">
         删除权限：
-        <BaseButton v-hasPermi="'delete'" type="danger"> Delete </BaseButton>
+        <BaseButton v-hasPermi="'system:menu:delete'" type="danger"> Delete </BaseButton>
       </ElCol>
       <ElCol :span="8">
         3秒后切换查看权限（无法动态修改）：
@@ -55,11 +55,11 @@ setTimeout(() => {
     <ElRow :gutter="20">
       <ElCol :span="8">
         新增权限：
-        <BaseButton v-if="hasPermi('add')" type="primary"> Add </BaseButton>
+        <BaseButton v-if="hasPermi('system:menu:create')" type="primary"> Add </BaseButton>
       </ElCol>
       <ElCol :span="8">
         删除权限：
-        <BaseButton v-if="hasPermi('delete')" type="danger"> Delete </BaseButton>
+        <BaseButton v-if="hasPermi('system:menu:delete')" type="danger"> Delete </BaseButton>
       </ElCol>
       <ElCol :span="8">
         3秒后切换查看权限：

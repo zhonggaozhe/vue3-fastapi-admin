@@ -114,7 +114,7 @@ const tokenRefreshInterceptor = (error: AxiosError) => {
     refreshPromise = refreshTokenApi(refreshToken)
       .then((res) => {
         if (res && res.data) {
-          const { tokens, user, session } = res.data
+          const { tokens, session } = res.data
           const newAccessToken = tokens?.accessToken
           const newRefreshToken = tokens?.refreshToken
 
@@ -124,15 +124,6 @@ const tokenRefreshInterceptor = (error: AxiosError) => {
             userStore.setRefreshToken(newRefreshToken)
             if (session) {
               userStore.setSession(session)
-            }
-            if (user) {
-              userStore.setUserInfo({
-                username: user?.username || '',
-                role: user?.role,
-                roleId: user?.roleId,
-                permissions: user?.permissions || [],
-                attributes: user?.attributes
-              })
             }
 
             // 处理等待队列中的所有请求

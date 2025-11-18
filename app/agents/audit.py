@@ -49,6 +49,9 @@ class AuditAgent:
         )
         ip = request_ip or (self._extract_ip(request) if request else None)
         ua = user_agent or (request.headers.get("User-Agent") if request else None)
+        safe_message = result_message
+        if safe_message and len(safe_message) > 480:
+            safe_message = f"{safe_message[:477]}..."
         record = {
             "trace_id": resolved_trace_id,
             "operator_id": operator_id,
@@ -62,7 +65,7 @@ class AuditAgent:
             "after_state": self._ensure_json(after_state),
             "params": self._ensure_json(params),
             "result_status": 1 if result_status else 0,
-            "result_message": result_message,
+            "result_message": safe_message,
         }
         if db is not None:
             db.add(AuditLog(**record))

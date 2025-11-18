@@ -27,8 +27,6 @@ class SessionInfo(BaseModel):
 class LoginResponse(BaseModel):
     tokens: TokenPair
     session: SessionInfo
-    user: dict[str, Any]
-    routes: list[dict[str, Any]] | None = None
 
 
 class RefreshRequest(BaseModel):

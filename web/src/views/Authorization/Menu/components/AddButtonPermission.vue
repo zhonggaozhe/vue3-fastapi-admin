@@ -12,15 +12,32 @@ const { required } = useValidator()
 const formSchema = reactive<FormSchema[]>([
   {
     field: 'label',
-    label: 'label',
+    label: 'Label',
     component: 'Input',
     colProps: {
       span: 24
     }
   },
   {
-    field: 'value',
-    label: 'value',
+    field: 'namespace',
+    label: 'Namespace',
+    component: 'Input',
+    value: 'system',
+    colProps: {
+      span: 24
+    }
+  },
+  {
+    field: 'resource',
+    label: 'Resource',
+    component: 'Input',
+    colProps: {
+      span: 24
+    }
+  },
+  {
+    field: 'action',
+    label: 'Action',
     component: 'Input',
     colProps: {
       span: 24
@@ -35,7 +52,8 @@ const emit = defineEmits(['confirm'])
 
 const rules = reactive({
   label: [required()],
-  value: [required()]
+  resource: [required()],
+  action: [required()]
 })
 
 const confirm = async () => {
@@ -46,8 +64,16 @@ const confirm = async () => {
   })
   if (valid) {
     const formData = await getFormData()
-    formData.id = Date.now()
-    emit('confirm', formData)
+    const namespace = (formData.namespace || 'system').trim()
+    const resource = (formData.resource || '').trim()
+    const action = (formData.action || '').trim()
+    const label = (formData.label || '').trim()
+    const value = [namespace, resource, action].join(':')
+    emit('confirm', {
+      id: Date.now(),
+      label,
+      value
+    })
     modelValue.value = false
   }
 }

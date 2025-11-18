@@ -14,6 +14,7 @@ import Detail from './components/Detail.vue'
 import { Dialog } from '@/components/Dialog'
 import { BaseButton } from '@/components/Button'
 import { cloneDeep } from 'lodash-es'
+import { Permission } from '@/components/Permission'
 
 const { t } = useI18n()
 
@@ -316,7 +317,9 @@ const save = async () => {
   <ContentWrap>
     <Search :schema="searchSchema" @reset="setSearchParams" @search="setSearchParams" />
     <div class="mb-10px">
-      <BaseButton type="primary" @click="AddAction">{{ t('exampleDemo.add') }}</BaseButton>
+      <Permission permission="system:menu:create">
+        <BaseButton type="primary" @click="AddAction">{{ t('exampleDemo.add') }}</BaseButton>
+      </Permission>
     </div>
     <Table
       :columns="tableColumns"

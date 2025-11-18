@@ -66,7 +66,7 @@ def create_app() -> FastAPI:
                 request=request,
             )
         return JSONResponse(
-            status_code=200,
+            status_code=exc.status_code,
             content={"code": exc.status_code, "message": detail, "data": None},
         )
 
@@ -75,7 +75,7 @@ def create_app() -> FastAPI:
         request: Request, exc: RequestValidationError
     ) -> JSONResponse:
         return JSONResponse(
-            status_code=200,
+            status_code=422,
             content={"code": 422, "message": exc.errors(), "data": None},
         )
 

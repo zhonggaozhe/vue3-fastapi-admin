@@ -9,7 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin
 
 if TYPE_CHECKING:  # pragma: no cover
-    from app.models.role import Role
+    from app.models.role import Role, Permission
 
 class MenuType(str, Enum):
     DIRECTORY = "directory"
@@ -46,20 +46,9 @@ class Menu(TimestampMixin, Base):
     can_to: Mapped[bool] = mapped_column(Boolean, default=False)
 
     parent: Mapped["Menu | None"] = relationship(remote_side="Menu.id", backref="children")
-    actions: Mapped[list["MenuAction"]] = relationship(
-        "MenuAction", back_populates="menu", cascade="all,delete-orphan"
+    permissions: Mapped[list["Permission"]] = relationship(
+        "Permission", back_populates="menu", cascade="all, delete-orphan"
     )
     roles: Mapped[list["Role"]] = relationship(
         "Role", secondary="role_menus", back_populates="menus", lazy="selectin"
     )
-
-class MenuAction(TimestampMixin, Base):
-    __tablename__ = "menu_actions"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    menu_id: Mapped[int] = mapped_column(ForeignKey("menus.id", ondelete="CASCADE"))
-    code: Mapped[str] = mapped_column(String(64))
-    label: Mapped[str] = mapped_column(String(128))
-    description: Mapped[str | None] = mapped_column(String(255))
-
-    menu: Mapped["Menu"] = relationship("Menu", back_populates="actions")

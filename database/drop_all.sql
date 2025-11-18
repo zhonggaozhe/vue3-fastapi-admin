@@ -10,7 +10,6 @@
 -- ============================================================================
 DROP TABLE IF EXISTS audit_log CASCADE;
 DROP TABLE IF EXISTS role_menus CASCADE;
-DROP TABLE IF EXISTS menu_actions CASCADE;
 DROP TABLE IF EXISTS menus CASCADE;
 DROP TABLE IF EXISTS departments CASCADE;
 DROP TABLE IF EXISTS role_permissions CASCADE;
@@ -35,4 +34,3 @@ DROP TYPE IF EXISTS menu_type CASCADE;
 -- 注意：此脚本不会删除扩展 citext，因为可能被其他对象使用
 -- 如果需要完全清理，请手动执行：DROP EXTENSION IF EXISTS citext CASCADE;
 -- ============================================================================
-

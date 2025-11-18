@@ -42,7 +42,6 @@ class AuthOrchestrator:
             redis, user_id=user.id, refresh_jti=tokens.refresh_payload["jti"], device_id=payload.device_id
         )
         principal = await self.rbac_agent.build_principal(user)
-        routes = await self._load_routes(db, user)
         session_snapshot = {
             "sid": session_info["sid"],
             "expires_at": session_info["expires_at"].isoformat(),
@@ -65,7 +64,7 @@ class AuthOrchestrator:
             payload=tokens.access_payload,
         )
         session_payload = SessionInfo(sid=session_info["sid"], expires_at=session_info["expires_at"])
-        return LoginResponse(tokens=token_pair, session=session_payload, user=principal, routes=routes)
+        return LoginResponse(tokens=token_pair, session=session_payload)
 
     async def refresh(
         self,
@@ -117,7 +116,6 @@ class AuthOrchestrator:
 
         # 9. 构建用户主体信息
         principal = await self.rbac_agent.build_principal(user)
-        routes = await self._load_routes(db, user)
 
         # 10. 记录审计日志
         session_snapshot = {
@@ -144,7 +142,7 @@ class AuthOrchestrator:
             payload=tokens.access_payload,
         )
         session_payload = SessionInfo(sid=session_info["sid"], expires_at=session_info["expires_at"])
-        return LoginResponse(tokens=token_pair, session=session_payload, user=principal, routes=routes)
+        return LoginResponse(tokens=token_pair, session=session_payload)
 
     async def logout(
         self,

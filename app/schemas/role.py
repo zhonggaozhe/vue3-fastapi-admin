@@ -11,6 +11,7 @@ class RoleUpsertBase(BaseModel):
     status: int = Field(1, ge=0, le=1)
     remark: str | None = None
     menu_ids: List[int] = Field(default_factory=list, alias="menuIds")
+    permission_ids: List[int] = Field(default_factory=list, alias="permissionIds")
 
 
 class RoleCreate(RoleUpsertBase):

@@ -34,5 +34,9 @@ export interface LoginSession {
 export interface LoginResult {
   tokens: LoginTokens
   session: LoginSession
+}
+
+export interface UserRoutesResult {
   user: LoginUserInfo
+  routes: AppCustomRouteRecordRaw[]
 }

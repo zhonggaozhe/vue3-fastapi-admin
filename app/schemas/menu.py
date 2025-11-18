@@ -9,6 +9,11 @@ class MenuPermission(BaseModel):
     value: str
 
 
+class MenuPermissionPayload(BaseModel):
+    label: str
+    value: str
+
+
 class MenuMeta(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 

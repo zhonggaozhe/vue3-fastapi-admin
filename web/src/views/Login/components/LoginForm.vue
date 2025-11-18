@@ -242,7 +242,7 @@ const signIn = async () => {
         })
 
         if (res) {
-          const { tokens, user, session } = res.data
+          const { tokens, session } = res.data
           userStore.setToken(tokens?.accessToken ? `Bearer ${tokens.accessToken}` : '')
           userStore.setRefreshToken(tokens?.refreshToken)
           userStore.setSession(session)
@@ -256,13 +256,6 @@ const signIn = async () => {
             userStore.setLoginInfo(undefined)
           }
           userStore.setRememberMe(unref(remember))
-          userStore.setUserInfo({
-            username: user?.username || formData.username,
-            role: user?.role,
-            roleId: user?.roleId,
-            permissions: user?.permissions || [],
-            attributes: user?.attributes
-          })
           // 是否使用动态路由
           if (appStore.getDynamicRouter) {
             getRole()
@@ -285,26 +278,45 @@ const signIn = async () => {
 // 获取角色信息
 const getRole = async () => {
   const formData = await getFormData<UserLoginType>()
-  const params = {
-    username: userStore.getUserInfo?.username || formData.username
+  const username = userStore.getUserInfo?.username || formData.username
+  let routers: AppCustomRouteRecordRaw[] | string[] = []
+  if (appStore.getDynamicRouter && appStore.getServerDynamicRouter) {
+    const res = await getUserRoutesApi()
+    if (res) {
+      routers = res.data?.routes || []
+      const user = res.data?.user
+      if (user) {
+        userStore.setUserInfo({
+          username: user?.username || username,
+          role: user?.role,
+          roleId: user?.roleId,
+          permissions: user?.permissions || [],
+          attributes: user?.attributes
+        })
+      }
+      userStore.setRoleRouters(routers)
+      await permissionStore.generateRoutes('server', routers).catch(() => {})
+    }
+  } else {
+    const res = await getTestRoleApi({ roleName: username })
+    if (res) {
+      routers = res.data || []
+      userStore.setUserInfo({
+        username,
+        role: username,
+        roleId: 'test',
+        permissions: ['*.*.*']
+      })
+      userStore.setRoleRouters(routers)
+      await permissionStore.generateRoutes('frontEnd', routers).catch(() => {})
+    }
   }
-  const res =
-    appStore.getDynamicRouter && appStore.getServerDynamicRouter
-      ? await getUserRoutesApi(params)
-      : await getTestRoleApi({ roleName: params.username })
-  if (res) {
-    const routers = res.data || []
-    userStore.setRoleRouters(routers)
-    appStore.getDynamicRouter && appStore.getServerDynamicRouter
-      ? await permissionStore.generateRoutes('server', routers).catch(() => {})
-      : await permissionStore.generateRoutes('frontEnd', routers).catch(() => {})
-
-    permissionStore.getAddRouters.forEach((route) => {
-      addRoute(route as RouteRecordRaw) // 动态添加可访问路由表
-    })
-    permissionStore.setIsAddRouters(true)
-    push({ path: redirect.value || permissionStore.addRouters[0].path })
-  }
+  if (!routers || routers.length === 0) return
+  permissionStore.getAddRouters.forEach((route) => {
+    addRoute(route as RouteRecordRaw)
+  })
+  permissionStore.setIsAddRouters(true)
+  push({ path: redirect.value || permissionStore.addRouters[0].path })
 }
 
 // 去注册页面

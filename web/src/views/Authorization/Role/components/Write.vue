@@ -90,9 +90,17 @@ const formSchema = ref<FormSchema[]>([
                 </div>
                 <div class="flex-1">
                   {unref(currentTreeData) && unref(currentTreeData)?.permissionList ? (
-                    <ElCheckboxGroup v-model={unref(currentTreeData).meta.permission}>
+                    <ElCheckboxGroup v-model={unref(currentTreeData).meta.permissionIds}>
                       {unref(currentTreeData)?.permissionList.map((v: any) => {
-                        return <ElCheckbox label={v.value}>{v.label}</ElCheckbox>
+                        if (v.id === undefined || v.id === null) {
+                          return null
+                        }
+                        return (
+                          <ElCheckbox label={Number(v.id)}>
+                            <span>{v.label}</span>
+                            <span class="ml-8px text-12px text-[#909399]">({v.value})</span>
+                          </ElCheckbox>
+                        )
                       })}
                     </ElCheckboxGroup>
                   ) : null}
@@ -136,11 +144,13 @@ const applyCurrentMenus = async (currentRow?: any) => {
     unref(treeRef)?.setCheckedKeys([], false)
     return
   }
+  ensurePermissionIds(currentRow.menu)
   const checked: any[] = []
   eachTree(currentRow.menu, (v) => {
     checked.push({
       id: v.id,
-      permission: v.meta?.permission || []
+      permissionIds: v.meta?.permissionIds || [],
+      permissionCodes: v.meta?.permission || []
     })
   })
 
@@ -148,7 +158,22 @@ const applyCurrentMenus = async (currentRow?: any) => {
     const index = findIndex(checked, (item) => item.id === node.id)
     if (index > -1) {
       const meta = { ...(node.meta || {}) }
-      meta.permission = checked[index].permission
+      const selectedIds = checked[index].permissionIds || []
+      if (selectedIds.length) {
+        meta.permissionIds = selectedIds
+      } else if (checked[index].permissionCodes?.length && node.permissionList?.length) {
+        const lookup = new Map<number | string, number>()
+        node.permissionList.forEach((perm: any) => {
+          if (perm?.value && perm?.id !== undefined) {
+            lookup.set(perm.value, Number(perm.id))
+          }
+        })
+        meta.permissionIds = checked[index].permissionCodes
+          .map((code: string) => lookup.get(code))
+          .filter((id: any) => typeof id === 'number') as number[]
+      } else {
+        meta.permissionIds = []
+      }
       node.meta = meta
     }
   })
@@ -161,10 +186,21 @@ const applyCurrentMenus = async (currentRow?: any) => {
   })
 }
 
+const ensurePermissionIds = (menus: any[]) => {
+  eachTree(menus, (node: any) => {
+    const meta = node.meta || {}
+    if (!Array.isArray(meta.permissionIds)) {
+      meta.permissionIds = []
+    }
+    node.meta = meta
+  })
+}
+
 const getMenuList = async () => {
   const res = await getMenuListApi()
   if (res) {
     treeData.value = res.data.list
+    ensurePermissionIds(treeData.value)
     buildNodeMap(treeData.value)
     await applyCurrentMenus(props.currentRow || undefined)
   }

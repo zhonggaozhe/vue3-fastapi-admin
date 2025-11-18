@@ -43,18 +43,18 @@ export default [
                     {
                       id: 1,
                       label: '新增',
-                      value: 'add'
+                      value: 'dashboard:analysis:add'
                     },
                     {
                       id: 2,
                       label: '编辑',
-                      value: 'edit'
+                      value: 'dashboard:analysis:edit'
                     }
                   ],
                   meta: {
                     title: '分析页',
                     noCache: true,
-                    permission: ['add', 'edit']
+                    permission: ['dashboard:analysis:add', 'dashboard:analysis:edit']
                   }
                 },
                 {
@@ -70,22 +70,27 @@ export default [
                     {
                       id: 1,
                       label: '新增',
-                      value: 'add'
+                      value: 'dashboard:workplace:add'
                     },
                     {
                       id: 2,
                       label: '编辑',
-                      value: 'edit'
+                      value: 'dashboard:workplace:edit'
                     },
                     {
                       id: 3,
                       label: '删除',
-                      value: 'delete'
+                      value: 'dashboard:workplace:delete'
                     }
                   ],
                   meta: {
                     title: '工作台',
-                    noCache: true
+                    noCache: true,
+                    permission: [
+                      'dashboard:workplace:add',
+                      'dashboard:workplace:edit',
+                      'dashboard:workplace:delete'
+                    ]
                   }
                 }
               ]
@@ -236,26 +241,32 @@ export default [
                     {
                       id: 1,
                       label: '新增',
-                      value: 'add'
+                      value: 'example:dialog:create'
                     },
                     {
                       id: 2,
                       label: '编辑',
-                      value: 'edit'
+                      value: 'example:dialog:edit'
                     },
                     {
                       id: 3,
                       label: '删除',
-                      value: 'delete'
+                      value: 'example:dialog:delete'
                     },
                     {
                       id: 4,
                       label: '查看',
-                      value: 'view'
+                      value: 'example:dialog:view'
                     }
                   ],
                   meta: {
-                    title: '综合示例-弹窗'
+                    title: '综合示例-弹窗',
+                    permission: [
+                      'example:dialog:create',
+                      'example:dialog:edit',
+                      'example:dialog:delete',
+                      'example:dialog:view'
+                    ]
                   }
                 },
                 {
@@ -271,26 +282,32 @@ export default [
                     {
                       id: 1,
                       label: '新增',
-                      value: 'add'
+                      value: 'example:page:add'
                     },
                     {
                       id: 2,
                       label: '编辑',
-                      value: 'edit'
+                      value: 'example:page:edit'
                     },
                     {
                       id: 3,
                       label: '删除',
-                      value: 'delete'
+                      value: 'example:page:delete'
                     },
                     {
                       id: 4,
                       label: '查看',
-                      value: 'view'
+                      value: 'example:page:view'
                     }
                   ],
                   meta: {
-                    title: '综合示例-页面'
+                    title: '综合示例-页面',
+                    permission: [
+                      'example:page:add',
+                      'example:page:edit',
+                      'example:page:delete',
+                      'example:page:view'
+                    ]
                   }
                 },
                 {

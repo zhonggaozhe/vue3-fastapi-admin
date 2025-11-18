@@ -4,8 +4,13 @@ import { useForm } from '@/hooks/web/useForm'
 import { PropType, reactive, watch, ref, unref } from 'vue'
 import { useValidator } from '@/hooks/web/useValidator'
 import { useI18n } from '@/hooks/web/useI18n'
-import { getMenuListApi } from '@/api/menu'
-import { ElButton, ElInput, ElPopconfirm, ElTable, ElTableColumn, ElTag } from 'element-plus'
+import {
+  getMenuListApi,
+  createMenuPermissionApi,
+  updateMenuPermissionApi,
+  deleteMenuPermissionApi
+} from '@/api/menu'
+import { ElButton, ElInput, ElPopconfirm, ElTable, ElTableColumn, ElTag, ElMessage } from 'element-plus'
 import AddButtonPermission from './AddButtonPermission.vue'
 import { BaseButton } from '@/components/Button'
 import { cloneDeep } from 'lodash-es'
@@ -21,11 +26,37 @@ const props = defineProps({
   }
 })
 
+const findPermissionIndex = (list: any[], target: any) => {
+  if (!list?.length) return -1
+  if (target?.id) {
+    return list.findIndex((item: any) => item.id === target.id)
+  }
+  return list.findIndex((item: any) => item.value === target?.value)
+}
+
 const handleClose = async (tag: any) => {
   const formData = await getFormData()
-  // 删除对应的权限
+  const permissionList = formData?.permissionList || []
+  const menuId = formData?.id
+  if (menuId && tag?.id) {
+    try {
+      await deleteMenuPermissionApi(menuId, tag.id)
+    } catch (error: any) {
+      ElMessage.error(error?.response?.data?.message || error?.message || '操作失败')
+      return
+    }
+  }
+  const removeIndex = findPermissionIndex(permissionList, tag)
   setValues({
-    permissionList: formData?.permissionList?.filter((v: any) => v.value !== tag.value)
+    permissionList: permissionList.filter((item: any, index: number) => {
+      if (tag?.id) {
+        return item.id !== tag.id
+      }
+      if (!tag?.id) {
+        return index !== removeIndex
+      }
+      return true
+    })
   })
 }
 
@@ -35,12 +66,33 @@ const handleEdit = async (row: any) => {
 }
 
 const handleSave = async () => {
+  if (!permissionEditingRow.value) return
   const formData = await getFormData()
-  const index = formData?.permissionList?.findIndex((x) => x.id === permissionEditingRow.value.id)
-  if (index !== -1) {
-    formData.permissionList[index] = { ...permissionEditingRow.value }
-    permissionEditingRow.value = null // 重置编辑状态
+  const permissionList = formData?.permissionList ? [...formData.permissionList] : []
+  const menuId = formData?.id
+  let nextRow = { ...permissionEditingRow.value }
+  if (menuId && permissionEditingRow.value.id) {
+    try {
+      const res = await updateMenuPermissionApi(menuId, permissionEditingRow.value.id, {
+        label: permissionEditingRow.value.label,
+        value: permissionEditingRow.value.value
+      })
+      nextRow = res.data
+    } catch (error: any) {
+      ElMessage.error(error?.response?.data?.message || error?.message || '操作失败')
+      return
+    }
   }
+  const index = findPermissionIndex(permissionList, permissionEditingRow.value)
+  if (index !== -1) {
+    permissionList[index] = nextRow
+  } else {
+    permissionList.push(nextRow)
+  }
+  setValues({
+    permissionList
+  })
+  permissionEditingRow.value = null
 }
 
 const showDrawer = ref(false)
@@ -397,8 +449,22 @@ defineExpose({
 
 const confirm = async (data: any) => {
   const formData = await getFormData()
+  const permissionList = formData?.permissionList ? [...formData.permissionList] : []
+  const menuId = formData?.id
+  let permission = { ...data }
+  if (menuId) {
+    try {
+      const res = await createMenuPermissionApi(menuId, data)
+      permission = res.data
+    } catch (error: any) {
+      ElMessage.error(error?.response?.data?.message || error?.message || '操作失败')
+      return
+    }
+  } else if (!permission.id) {
+    permission.id = Date.now()
+  }
   setValues({
-    permissionList: [...(formData?.permissionList || []), data]
+    permissionList: [...permissionList, permission]
   })
 }
 </script>

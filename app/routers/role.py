@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,8 +26,32 @@ def _format_datetime(value) -> str | None:
     return value.strftime("%Y-%m-%d %H:%M:%S")
 
 
+def _permission_code(permission) -> str:
+    namespace = (permission.namespace or "").strip()
+    resource = permission.resource.strip()
+    action = permission.action.strip()
+    if namespace == resource == action == "*":
+        return "*.*.*"
+    if namespace:
+        return f"{namespace}:{resource}:{action}"
+    return f"{resource}:{action}"
+
+
 def _serialize_role(role, menu_repo: MenuRepository) -> dict:
-    menu_tree = menu_repo.build_tree_from_menus(role.menus, include_details=True)
+    action_code_map: dict[int, set[str]] = defaultdict(set)
+    action_id_map: dict[int, set[int]] = defaultdict(set)
+    for perm in role.permissions:
+        if perm.menu_id is None:
+            continue
+        action_code_map[int(perm.menu_id)].add(_permission_code(perm))
+        if perm.id is not None:
+            action_id_map[int(perm.menu_id)].add(int(perm.id))
+    menu_tree = menu_repo.build_tree_from_menus(
+        role.menus,
+        include_details=True,
+        action_code_map=action_code_map or None,
+        action_id_map=action_id_map or None,
+    )
     return {
         "id": role.id,
         "roleName": role.name,
@@ -34,6 +60,7 @@ def _serialize_role(role, menu_repo: MenuRepository) -> dict:
         "createTime": _format_datetime(role.created_at),
         "remark": role.description,
         "menu": menu_tree,
+        "permissionIds": sorted(perm.id for perm in role.permissions if perm.id is not None),
     }
 
 

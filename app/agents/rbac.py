@@ -1,3 +1,4 @@
+from venv import logger
 from app.agents.identity import AuthenticatedUser
 
 
@@ -21,6 +22,7 @@ class RBACAgent:
             return True
 
         target_namespace = namespace or ""
+        logger.info("Checking permission: %s %s %s %s", target_namespace, resource, action, user.permissions)
         for perm in user.permissions:
             if self._matches_permission(perm, target_namespace, resource, action):
                 return True

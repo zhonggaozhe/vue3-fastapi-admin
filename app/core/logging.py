@@ -11,14 +11,23 @@ DEFAULT_LOG_FORMAT = "%(asctime)s %(levelname)s [%(name)s] trace_id=%(trace_id)s
 DEFAULT_LOG_LEVEL = logging.INFO
 
 
+class TraceFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:  # type: ignore[override]
+        if not hasattr(record, "trace_id"):
+            record.trace_id = get_trace_id()
+        return super().format(record)
+
+
 def configure_logging(level: str | int = DEFAULT_LOG_LEVEL) -> None:
     """Configure the root logger once with a predictable format."""
-    if logging.getLogger().handlers:
+    root_logger = logging.getLogger()
+    if root_logger.handlers:
         return
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(TraceFormatter(DEFAULT_LOG_FORMAT))
     logging.basicConfig(
         level=_resolve_level(level),
-        format=DEFAULT_LOG_FORMAT,
-        handlers=[logging.StreamHandler(sys.stdout)],
+        handlers=[handler],
     )
 
 
@@ -109,4 +118,3 @@ def _resolve_level(level: str | int) -> int:
         if isinstance(numeric_level, int):
             return numeric_level
     return DEFAULT_LOG_LEVEL
-

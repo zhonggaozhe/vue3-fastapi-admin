@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.settings import get_settings
 from app.models.menu import Menu
-from app.models.role import Role
+from app.models.role import Permission, Role
 from app.models.user import UserRole
 from app.schemas.role import RoleCreate, RoleUpdate
 
@@ -18,7 +18,7 @@ class RoleRepository:
 
     def _base_query(self):
         return select(Role).options(
-            selectinload(Role.menus).selectinload(Menu.actions),
+            selectinload(Role.menus).selectinload(Menu.permissions),
             selectinload(Role.permissions),
             selectinload(Role.users),
         )
@@ -47,6 +47,7 @@ class RoleRepository:
         self.session.add(role)
         await self.session.flush()
         await self._assign_menus(role, payload.menu_ids, replace=True)
+        await self._assign_permissions(role, payload.permission_ids)
         await self.session.commit()
         return await self.get_role(role.id)
 
@@ -61,6 +62,7 @@ class RoleRepository:
         role.description = payload.remark
         role.is_active = bool(payload.status)
         await self._assign_menus(role, payload.menu_ids, replace=True)
+        await self._assign_permissions(role, payload.permission_ids)
         await self.session.commit()
         return await self.get_role(role.id)
 
@@ -82,10 +84,22 @@ class RoleRepository:
             result = await self.session.execute(
                 select(Menu)
                 .where(Menu.id.in_(menu_ids))
-                .options(selectinload(Menu.actions))
+                .options(selectinload(Menu.permissions))
             )
             menus = result.scalars().unique().all()
             role.menus.extend(menus)
+
+    async def _assign_permissions(self, role: Role, permission_ids: list[int] | None) -> None:
+        if permission_ids is None:
+            return
+        if not permission_ids:
+            role.permissions = []
+            return
+        result = await self.session.execute(
+            select(Permission).where(Permission.id.in_(permission_ids))
+        )
+        permissions = result.scalars().unique().all()
+        role.permissions = permissions
 
     async def _ensure_unique(self, *, code: str, name: str, exclude_id: int | None = None) -> None:
         stmt = select(Role.id).where(or_(Role.code == code, Role.name == name))

@@ -157,13 +157,30 @@ const save = async () => {
   }
 }
 
+const collectPermissionIds = (menus: any[] = []) => {
+  const ids = new Set<number>()
+  menus.forEach((item: any) => {
+    if (!item || item.id === undefined || item.id === null) return
+    const selectedIds = Array.isArray(item.meta?.permissionIds) ? item.meta.permissionIds : []
+    selectedIds.forEach((id: number | string) => {
+      const numericId = Number(id)
+      if (!Number.isNaN(numericId)) {
+        ids.add(numericId)
+      }
+    })
+  })
+  return Array.from(ids)
+}
+
 const transformPayload = (formData: any) => {
+  const selectedMenus = formData.menu || []
   return {
     roleName: formData.roleName,
     role: formData.role,
     status: formData.status,
     remark: formData.remark,
-    menuIds: (formData.menu || []).map((item: any) => Number(item.id))
+    menuIds: selectedMenus.map((item: any) => Number(item.id)),
+    permissionIds: collectPermissionIds(selectedMenus)
   }
 }
 

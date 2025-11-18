@@ -1,9 +1,5 @@
 import request from '@/axios'
-import type { LoginResult, UserLoginType, UserType } from './types'
-
-interface MenuRouteParams {
-  username: string
-}
+import type { LoginResult, UserLoginType, UserType, UserRoutesResult } from './types'
 
 export const loginApi = (data: UserLoginType): Promise<IResponse<LoginResult>> => {
   return request.post({ url: '/auth/login', data })
@@ -43,10 +39,8 @@ export const getUserListApi = ({ params }: AxiosConfig) => {
   }>({ url: '/mock/user/list', params })
 }
 
-export const getUserRoutesApi = (
-  params: MenuRouteParams
-): Promise<IResponse<AppCustomRouteRecordRaw[]>> => {
-  return request.get({ url: '/menus/routes', params })
+export const getUserRoutesApi = (): Promise<IResponse<UserRoutesResult>> => {
+  return request.get({ url: '/menus/routes' })
 }
 
 export const getTestRoleApi = (params: { roleName: string }): Promise<IResponse<string[]>> => {

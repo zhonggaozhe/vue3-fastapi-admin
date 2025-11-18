@@ -56,7 +56,7 @@ async def list_users(
     return success_response(response)
 
 
-@router.post("/save")
+@router.post("/save", dependencies=[permission_guard("user", "create")])
 async def save_user(
     payload: UserSavePayload,
     request: Request,
